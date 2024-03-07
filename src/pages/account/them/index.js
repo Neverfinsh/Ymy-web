@@ -392,7 +392,7 @@ const Center = () => {
     templateThemform.setFieldsValue({
       "deviceId":optionValue ,
       "articleNum":1 ,
-      "articleSendTime":moment().add(5,'minutes')
+      "articleSendTime":moment().add(50,'minutes')
     })
 
     // 查询这个账号和设备的模板信息
@@ -631,7 +631,7 @@ const onDelBath=()=>{
 
   const onDataAfterTmp=()=>{
     templateThemform.setFieldsValue({
-       "articleSendTime":moment().add(10,'minutes')
+       "articleSendTime":moment().add(30,'minutes')
     })
   }
 

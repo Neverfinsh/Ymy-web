@@ -28,8 +28,8 @@ export async function updateSettingImp(params) {
 }
 
 
-export async function delSettingImp(themId) {
-  return request(`${url}/them/web/delThem/${themId}`, {
+export async function delSettingImp(pkId) {
+  return request(`${url}/setting/web/delSetting/${pkId}`, {
     method: 'POST',
   });
 }

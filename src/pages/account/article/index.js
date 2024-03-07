@@ -37,8 +37,12 @@ import { isEmpty } from '@/utils/utils';
 const Article = () => {
 
   const[articleModalForm] = useForm();
+  const[shortArticleModalForm] = useForm();
+  const[originalArticleModalForm] = useForm();
+
   const[isModalOpen,setIsModalOpen]=useState(false);
   const[shortModalOpen,setShotModalOpen]=useState(false);
+  const[orginalModalOpen,setOrignalModalOpen]=useState(false);
 
 
 
@@ -285,12 +289,23 @@ const Article = () => {
 
   const addShortModalClick=()=>{
        setShotModalOpen(true)
+       shortArticleModalForm.setFieldsValue({
+         "articleSendTime":moment().add(10,'minutes'),
+         "articleNum":1
+       })
   }
 
-  const  addThemByTemplate=()=>{
-    //
 
+
+  const addOriginalModalClick=()=>{
+    setOrignalModalOpen(true)
+    originalArticleModalForm.setFieldsValue({
+      "articleSendTime":moment().add(10,'minutes'),
+      "articleNum":1
+    })
   }
+
+
   const  detailArticle=(record)=>{
             operationRef.current.data="详情"
            setIsModalOpen(true)
@@ -433,7 +448,7 @@ const Article = () => {
 
 
   const onShortModalOk=()=>{
-    setIsModalOpen(false)
+
     const param= articleModalForm.getFieldsValue();
 
     param.status=0
@@ -451,30 +466,42 @@ const Article = () => {
       adddArticle(param).then(res => {
         if(res.code === 0){
           openNotification('success','新增一篇文章成功')
+          setOrignalModalOpen(false)
         }
         initList()
       }).catch((error) => {
         openNotification('error',`新增一篇文章失败,失败原因:${error}`)
       });
     }
-
-    // 【  编辑方法 】
-
-    if(operationRef.current.data ==="编辑"){
-      updateArticleImpl(param).then(res => {
-        if(res.code === 0){
-          openNotification('success','编辑文章成功')
-        }
-        initList()
-      }).catch((error) => {
-        openNotification('error',`编辑文章失败,失败原因:${error}`)
-      });
-      setTableLoading(false)
-    }
     // eslint-disable-next-line no-use-before-define
     refreshArtiList()
   }
 
+
+  const onOrignalModalOk=()=>{
+
+    const param= originalArticleModalForm.getFieldsValue();
+
+    param.status=0
+    param.createTime=moment(param.articleSendTime).format('YYYY-MM-DD HH:mm:ss')
+    param.articleSendTime=moment(param.articleSendTime).format('YYYY-MM-DD HH:mm:ss')
+    param.updateTime=moment().format('YYYY-MM-DD HH:mm:ss')
+    const  accountStr=localStorage.getItem("user")
+    const  accountObj=JSON.parse(accountStr);
+    const  {userAccount} = accountObj
+    param.uid=userAccount
+
+      adddArticle(param).then(res => {
+        if(res.code === 0){
+          openNotification('success','新增一篇文章成功')
+        }
+      }).catch((error) => {
+        openNotification('error',`新增一篇文章失败,失败原因:${error}`)
+      });
+    setOrignalModalOpen(false)
+    // eslint-disable-next-line no-use-before-define
+    refreshArtiList()
+  }
 
   // 【 刷新】
   const refreshArtiList=()=>{
@@ -603,22 +630,54 @@ const onInputChange=(e)=>{
   };
 
 
+
   // 【 执行上传 】
-  const handleUpload = (options) => {
-    const upLoadForm= importThemform.getFieldsValue();
+  const shortArticleHandleUpload = (options) => {
+    const upLoadForm= shortArticleModalForm.getFieldsValue();
+    //  todo 验证
     const localUser=JSON.parse(localStorage.getItem("user"));
     //  判断先填写form的选项
     const {file, onSuccess, onError} = options;
     const formData = new FormData();
     formData.append('file',  file);
     formData.append('uid',  localUser.userAccount);
-    formData.append('deviceId',  upLoadForm.importDeviceId);
-    formData.append('articleSendTime',  moment(upLoadForm.importArticleSendTime).format('YYYY-MM-DD HH:mm:ss'));
-    formData.append('articleNum',  upLoadForm.importArticleNum);
-    formData.append('channel',  upLoadForm.importArticleChannel);
+    formData.append('deviceId',  upLoadForm.deviceId);
+    formData.append('articleSendTime',  moment(upLoadForm.articleSendTime).format('YYYY-MM-DD HH:mm:ss'));
+    formData.append('articleNum',  upLoadForm.articleNum);
+    formData.append('channel',  upLoadForm.articleChannel);
     //
-    // axios.post('http://101.201.33.155:8099/them/import/params/file', formData, {
-    axios.post('http://localhost:8099/them/import/params/file', formData, {
+    // axios.post('http://101.201.33.155:8099/article/web/import/shortArticle/file', formData, {
+    axios.post('http://localhost:8099/article/web/import/shortArticle/file', formData, {
+      headers: {'Content-Type': 'multipart/form-data'}
+      // eslint-disable-next-line no-unused-vars
+    }).then((res) => {
+      onSuccess(
+        openNotification("success",`导入主题成功`,3.5)
+      )
+    }).catch((error) => {
+      onError(
+        openNotification("error",`导入主题失败，原因: ${error}`,3.5)
+      )
+    });
+  };
+
+  // 【 执行上传 】
+  const originalArticleHandleUpload = (options) => {
+    const upLoadForm= originalArticleModalForm.getFieldsValue();
+    //  todo 验证
+    const localUser=JSON.parse(localStorage.getItem("user"));
+    //  判断先填写form的选项
+    const {file, onSuccess, onError} = options;
+    const formData = new FormData();
+    formData.append('file',  file);
+    formData.append('uid',  localUser.userAccount);
+    formData.append('deviceId',  upLoadForm.deviceId);
+    formData.append('articleSendTime',  moment(upLoadForm.articleSendTime).format('YYYY-MM-DD HH:mm:ss'));
+    formData.append('articleNum',  upLoadForm.articleNum);
+    formData.append('channel',  upLoadForm.articleChannel);
+    //
+    // axios.post('http://101.201.33.155:8099/article/web/import/originalArticle/file', formData, {
+    axios.post('http://localhost:8099/article/web/import/originalArticle/file', formData, {
       headers: {'Content-Type': 'multipart/form-data'}
       // eslint-disable-next-line no-unused-vars
     }).then((res) => {
@@ -645,8 +704,9 @@ const onInputChange=(e)=>{
             <Space  style={{ marginBottom: 16}}>
               {/* eslint-disable-next-line react/jsx-no-undef */}
               <Button    type= 'primary'  icon={<PlusOutlined />} onClick={addThemModalClick}>新增</Button>
-              <Button    type= 'primary'  icon={<PlusOutlined />} onClick={addShortModalClick}>批量导入文章</Button>
-              <Button    type= 'primary'  icon={<PlusOutlined />} onClick={addShortModalClick}>批量导入短文</Button>
+              {/* <Button    type= 'primary'  icon={<PlusOutlined />} onClick={addShortModalClick}>批量导入文章</Button> */}
+              <Button    type= 'primary'  icon={<PlusOutlined />} onClick={addShortModalClick}>批量导入短文/换行</Button>
+              <Button    type= 'primary'  icon={<PlusOutlined />} onClick={addOriginalModalClick}>批量导入原文</Button>
               <Button    type= 'primary'  icon={<TeamOutlined />} onClick={onPublicshBath} >批量发布</Button>
               {/* eslint-disable-next-line jsx-a11y/label-has-associated-control */}
               <label>设备编号:</label>
@@ -799,7 +859,7 @@ const onInputChange=(e)=>{
       </Modal>
       { /** **************************************** 新增 说说 ************************************* * */}
       <Modal
-        title="批量新增短文"
+        title="批量新增短文,并且在标点符号进行换行"
         open={shortModalOpen}
         onOk={onShortModalOk}
         onCancel={()=>{  setShotModalOpen(false)}}
@@ -808,7 +868,7 @@ const onInputChange=(e)=>{
         destroyOnClose
       >
         <Form
-          form={articleModalForm}
+          form={shortArticleModalForm }
           labelCol={{ span: 4 }}
           wrapperCol={{ span: 16 }}
           autoComplete="off"
@@ -847,7 +907,82 @@ const onInputChange=(e)=>{
           >
             <Upload
               name="file"
-              customRequest={handleUpload}
+              customRequest={shortArticleHandleUpload}
+            >
+              <Button key="upload" icon={<CloudUploadOutlined />}  type= 'primary'   > 导入</Button>
+            </Upload>
+          </Form.Item>
+          <Form.Item
+            label="主键Id"
+            name="id"
+            rules={[{required: true}]}
+            style={{display:'none'}}
+          >
+            <Input  />
+          </Form.Item>
+          <Form.Item
+            label="主键Id"
+            name="uid"
+            rules={[{required: true}]}
+            style={{display:'none'}}
+          >
+            <Input  />
+          </Form.Item>
+        </Form>
+      </Modal>
+
+
+      { /** **************************************** 新增 【原文】 ************************************* * */}
+      <Modal
+        title="批量新增原文"
+        open={orginalModalOpen}
+        onOk={onOrignalModalOk}
+        onCancel={()=>{  setOrignalModalOpen(false)}}
+        width='60%'
+        style={{height:'500px'}}
+        destroyOnClose
+      >
+        <Form
+          form={originalArticleModalForm }
+          labelCol={{ span: 4 }}
+          wrapperCol={{ span: 16 }}
+          autoComplete="off"
+        >
+          <Form.Item
+            label="文章篇数"
+            name="articleNum"
+            rules={[{required: true}]}
+          >
+            <InputNumber   min={1} readOnly={operationRef.current.data === "详情"}   style={{ width: 150 }}  />
+          </Form.Item>
+          <Form.Item
+            label="开始发布时间"
+            name="articleSendTime"
+            tooltip="开始发布的时间,每5分钟"
+            rules={[{required: true}]}
+
+          >
+            <DatePicker showTime disabled ={operationRef.current.data === "详情"}   />
+          </Form.Item>
+          <Form.Item
+            label="输入设备编号"
+            name="deviceId"
+            rules={[{required: true}]}
+          >
+            <Select
+              style={{ width: 150 }}
+              options={deviceOption}
+              disabled={operationRef.current.data === "详情"}
+            />
+          </Form.Item>
+          <Form.Item
+            label="批量导入短文"
+            name="articleThemFile"
+            rules={[{required: false}]}
+          >
+            <Upload
+              name="file"
+              customRequest={originalArticleHandleUpload}
             >
               <Button key="upload" icon={<CloudUploadOutlined />}  type= 'primary'   > 导入</Button>
             </Upload>

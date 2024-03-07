@@ -1,11 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { PlusOutlined, ReloadOutlined, SearchOutlined } from '@ant-design/icons';
 import { Button, Card, Modal, Select, Space, Upload } from 'antd';
-import axios from "axios";
+import axios from 'axios';
 import { findDeviceList } from '@/services/device';
 import { openNotification } from '@/utils/utils';
 import { findSettingList } from '@/services/setting';
-import { updateArticleImpl } from '@/services/article';
 
 const getBase64 = (file) =>
   new Promise((resolve, reject) => {
@@ -16,7 +15,7 @@ const getBase64 = (file) =>
   });
 
 
-const imgManage = (url, config) => {
+const imgManage = () => {
 
   const [previewOpen, setPreviewOpen] = useState(false);
   const [previewImage, setPreviewImage] = useState('');
@@ -24,32 +23,62 @@ const imgManage = (url, config) => {
   // 初始化设备
   const [deviceOption,setDeviceOption]=useState([]);
   const[optionValue,setOptionValue]=useState();
-
-
-
   const [fileList, setFileList] = useState([]);
+  const [moduleOptions,setModuleOptions]=useState([]);
 
+  const [imageModuleType,setImageModuleType]=useState();
+
+
+  // eslint-disable-next-line react-hooks/rules-of-hooks
+  useEffect(()=>{
+    initImgList()
+    initImgCodeType()
+  },[])
+
+  // eslint-disable-next-line react-hooks/rules-of-hooks
   useEffect(()=>{
     setFileList(fileList)
   },[fileList])
 
 
+
+  const  initImgCodeType =()=>{
+    const userStr=localStorage.getItem("user");
+    const user=JSON.parse(userStr);
+    const param={}
+    param.module="_IMG_MODULE"
+    param.deviceId=null
+    param.accountId=user.userAccount
+    findSettingList(param).then(result=>{
+      const {res}=result
+      const dataOptions=[];
+      for(const item of res){
+        const obj={}
+              obj.label=item.code
+              obj.value=item.name
+        dataOptions.push(obj)
+      }
+      const uniqueArr = dataOptions.filter((obj, index, self) =>
+        index === self.findIndex((t) => (
+          t.label === obj.label && t.value === obj.value
+        ))
+      );
+      setModuleOptions(uniqueArr)
+    }).catch(err=>{
+      console.log(' 发生错误' ,err);
+    })
+  }
+
   const initImgList=()=>{
-    // 用户的名称
     const  accountStr=localStorage.getItem("user")
     const  accountObj=JSON.parse(accountStr);
     const  {userAccount} = accountObj
-
     const param={}
-          param.module="ImgModule"
-       //   param.deviceId=optionValue
-          param.deviceId='LIWU004'
+          param.deviceId=optionValue
           param.accountId=userAccount
-          param.groupCodeId='005'
-    console.log('----图片列表请求参数param----' ,param);
-    axios.post('http://101.201.33.155:8099/image/web/imageList', param, {
-      headers: {'Content-Type': 'application/json'},
-    }).then((response) => {
+          param.groupCodeId='_IMG_MODULE'
+    axios.post('http://101.201.33.155:8099/image/web/imageList', param, { headers: {'Content-Type': 'application/json'}})
+      .then((response) => {
       const {data:{res}} = response
       const fileListArr=[]
       for(let i=0;i<res.length;i+=1){
@@ -61,36 +90,18 @@ const imgManage = (url, config) => {
         fileListArr.push(fileItem)
       }
       setFileList(fileListArr)
-
-      console.log('-----res---',res)
     })
       .catch((error) => {
         console.error('文件上传失败', error);
       });
-
-    // findSettingList(param).then((res)=>{
-    //   console.log('res' ,res);
-    //   // setFileList
-    //
-    // }).catch((error)=>{
-    //   console.log('error' ,error);
-    // })
-
-
   }
-
-
-
-  useEffect(()=>{
-    initImgList()
-  },[])
 
 
   const handleCancel = () => setPreviewOpen(false);
 
   const handlePreview = async (file) => {
     if (!file.url && !file.preview) {
-       file.preview = await getBase64(file.originFileObj);
+        file.preview = await getBase64(file.originFileObj);
     }
     setPreviewImage(file.url || file.preview);
     setPreviewOpen(true);
@@ -104,21 +115,15 @@ const imgManage = (url, config) => {
 
   const handleUploadChange = (options) => {
     // 获取参数
-    const deviceId=optionValue
-
-    const  accountStr=localStorage.getItem("user")
-    const  accountObj=JSON.parse(accountStr);
-    const  {userAccount} = accountObj
-
-    console.log('111111111点击了---' ,);
-
+    const userStr=localStorage.getItem("user");
+    const user=JSON.parse(userStr);
     // 上传图片风格
     const {file, onSuccess, onError} = options;
     const formData = new FormData();
     formData.append('files', file);
-    formData.append('deviceId',  'LIWU004');
-    formData.append('accountId', '15084762140');
-    formData.append('groupCodeId', '005');
+    formData.append('deviceId',    optionValue);
+    formData.append('accountId',   user.userAccount);
+    formData.append('groupCodeId', imageModuleType);
 
     axios.post('http://101.201.33.155:8099/image/web/uploadImg', formData, {
       headers: {'Content-Type': 'multipart/form-data'},
@@ -131,8 +136,7 @@ const imgManage = (url, config) => {
         onError('上传失败');
       });
   };
-
-
+  
 
   const  initDviceOption =()=>{
 
@@ -180,8 +184,6 @@ const imgManage = (url, config) => {
   }
 
   const onRemove=(file)=>{
-    console.log('删除111' ,file.uid);
-
     axios.delete(`http://localhost:8099/image/web/delImg/${file.uid}`, {
       headers: {'Content-Type': 'application/json'},
     }).then((response) => {
@@ -189,6 +191,10 @@ const imgManage = (url, config) => {
     })
   }
 
+
+  const moduleChange=(value)=>{
+        setImageModuleType(value)
+  }
   return (
     <>
         <Space  style={{ marginBottom: 16}}>
@@ -196,14 +202,9 @@ const imgManage = (url, config) => {
           <a style={{color:'black'}}>当前类型:</a>
           <Select
             style={{ width: 150 }}
-            options={[
-              {
-                "label":"美女",
-                "value":1,
-              }
-            ]}
+            options={moduleOptions}
+            onChange={moduleChange}
           />
-          {/* eslint-disable-next-line jsx-a11y/label-has-associated-control */}
           <label>设备编号:</label>
           <Select
             defaultValue="all"

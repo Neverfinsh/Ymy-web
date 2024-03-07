@@ -1,27 +1,22 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { connect } from 'umi';
 import { Button, Card, Form, Input, Modal, Row, Select, Space, Spin, Table } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
 import useForm from 'antd/lib/form/hooks/useForm';
 import TextArea from 'antd/es/input/TextArea';
-import { delThemImp } from '@/services/them';
+import { delSettingImp, findSettingList, saveSetting, updateSettingImp } from '@/services/setting';
+import { findDeviceList } from '@/services/device';
+import { openNotification } from '@/utils/utils';
 
 const BaseSetting=()=>{
 
   const[settingModalForm] = useForm();
   const [settingModalOpen,setSettingModalOpen]=useState(false);
-
-  const data=[
-    {
-      "id":"1",
-      "name":"测试配置",
-      "code":"1",
-      "deviceId":"1",
-      "accountId":"1",
-      "remark":"1",
-      "module":"测试模块",
-    }
-  ]
+  const [tableDatas,setTableDatas]=useState([]);
+  const [tableLoading,setTableLoding]=useState(false);
+  const operRef=useRef({data:''})
+  const [deviceOption,setDeviceOption]=useState([]);
+  const [moduleOptions,setModuleOptions]=useState([]);
 
   const columns=[
     {
@@ -44,6 +39,7 @@ const BaseSetting=()=>{
       title: '功能模块',
       dataIndex: 'module',
       key: 'module',
+      // todo 筛选
     },
     {
       title: '配置名称',
@@ -78,41 +74,173 @@ const BaseSetting=()=>{
     },
   ];
 
-  const [tableLoading,setTableLoding]=useState(false);
-  const operRef=useRef({data:''})
+
+
+
+  const  initDviceOption =()=>{
+
+    const  accountStr=localStorage.getItem("user")
+    const  accountObj=JSON.parse(accountStr);
+    const  {userAccount} = accountObj
+
+    const  options=[]
+    const  defaultObj={}
+    defaultObj.value='all'
+    defaultObj.label='------全部------'
+    options.push(defaultObj)
+
+    findDeviceList(userAccount).then(res=>{
+      if(res.code===0){
+        const   deviceNames=[]
+        const   deviceList=res.res
+        for(let i=0;i<deviceList.length; i += 1){
+          deviceNames.push(deviceList[i].dviceName)
+          const obj={}
+          obj.value=deviceList[i].dviceName
+          obj.label=deviceList[i].dviceName
+          options.push(obj)
+        }
+        setDeviceOption(options);
+      }
+    }).catch((error)=>{
+      openNotification('error',`获取设备编号失败!原因:${error}`,3)
+    });
+  }
+
+  const  initSettingList =()=>{
+
+    const userStr=localStorage.getItem("user");
+    const user=JSON.parse(userStr);
+
+    const param={}
+          param.module=null
+          param.deviceId=null
+          param.accountId=user.userAccount
+    findSettingList(param).then(result=>{
+      console.log('res' ,res);
+      const datas=[]
+      const {res}=result
+      // eslint-disable-next-line no-restricted-syntax
+      for(const item of res){
+           const obj={}
+            obj.id=item.id
+            obj.module=item.module
+            obj.name=item.name
+            obj.code=item.code
+            obj.remark=item.remark
+            obj.deviceId=item.deviceId
+            obj.accountId=item.accountId
+            obj.label=item.module
+            obj.value=item.module
+        datas.push(obj)
+      }
+       setTableDatas(datas)
+      //
+      const dataOptions=[];
+      for(const item of res){
+        const obj={}
+              obj.label=item.module
+              obj.value=item.module
+        dataOptions.push(obj)
+      }
+      const uniqueArr = dataOptions.filter((obj, index, self) =>
+        index === self.findIndex((t) => (
+          t.label === obj.label && t.value === obj.value
+        ))
+      );
+      setModuleOptions(uniqueArr)
+    }).catch(err=>{
+      console.log(' 发生错误' ,err);
+    })
+  }
+
+
+  useEffect(()=>{
+    initSettingList()
+    initDviceOption()
+  },[])
+
+
 
   const addSettingClick=()=>{
-    operRef.current.data='add'
+      operRef.current.data='add'
       setSettingModalOpen(true)
   }
 
-  const updateSettingClick=()=>{
-    operRef.current.data='update'
-    setSettingModalOpen(true)
+  const updateSettingClick=(record)=>{
+    console.log('--编辑的参数---' ,record);
+      operRef.current.data='update'
+      setSettingModalOpen(true)
+       const arr=[]
+       arr.push(record.module)
+      settingModalForm.setFieldsValue({
+        "id":record.id,
+        "deviceId":record.deviceId,
+        "module":arr,
+        "settingName":record.name,
+        "settingCode":record.code,
+        "remark":record.remark
+      })
   }
 
-  const delSettingClick=()=>{
+
+  const delSettingClick=(record)=>{
     Modal.confirm({
       title:   '确认删除',
       content: '确定要删除吗？',
       onOk() {
         const settingId=record.id
-        // delThemImp(themId).then(res=>{
-        //   const resultCode=res.code
-        //   // eslint-disable-next-line no-empty
-        //   if(resultCode===0){
-        //     openNotification("success",`删除主题列表成功`,)
-        //   }
-        //   initThemList();
-        // }).catch((error)=>{
-        //   openNotification("error",`删除主题列表失败,原因: ${error}`,)
-        // })
+        delSettingImp(settingId).then(result=>{
+            if(result.code===0){
+              openNotification("success",`删除配置成功`,)
+            }
+        }).catch(error=>{
+             openNotification("error",`删除配置失败,原因: ${error}`,)
+        })
       },
       onCancel() {},
     });
   }
 
   const modalOk=()=>{
+
+    const userStr=localStorage.getItem("user");
+    const user=JSON.parse(userStr);
+   const formDatas= settingModalForm.getFieldsValue();
+
+    const param={}
+          param.deviceId=formDatas.deviceId
+          param.accountId=user.userAccount
+          const moduleName=formDatas.module[0]
+          param.module=moduleName
+
+          param.name=formDatas.settingName
+          param.code=formDatas.settingCode
+          param.id=formDatas.id
+          param.remark=formDatas.remark
+
+    if( operRef.current.data === 'add'){
+      saveSetting(param).then(result => {
+        console.log('--新增参数---' ,param);
+        if(result.code === 0){
+           openNotification('success',`新增一条配置成功`)
+           setSettingModalOpen(false)
+        }
+      }).catch((error) => {
+         openNotification('error',`新增一条配置成功,失败原因:${error}`)
+      });
+    }else {
+      // TODO 编辑
+      updateSettingImp(param).then(result => {
+        console.log('--编辑参数---' ,param);
+        if(result.code === 0){
+          openNotification('success',`编辑一条配置成功`)
+          setSettingModalOpen(false)
+        }
+      }).catch((error) => {
+         openNotification('error',`编辑一条配置成功,失败原因:${error}`)
+      });
+    }
 
   }
 
@@ -133,12 +261,13 @@ const BaseSetting=()=>{
       <Card bordered style={{ marginBottom: 24 , width:'100%',height: '80%' }} >
         <Space  style={{ marginBottom: 16}}>
            <Button    type= 'primary'  icon={<PlusOutlined />}  onClick={addSettingClick}>新增配置详情</Button>
+           <Button    type= 'primary'  icon={<PlusOutlined />}  onClick={initSettingList}>刷新</Button>
         </Space>
         <Spin spinning={tableLoading}>
           <Table
             rowKey="id"
             columns={columns}
-            dataSource={data}
+            dataSource={tableDatas}
             scroll={{ x: 1500 }}
           />
         </Spin>
@@ -165,25 +294,11 @@ const BaseSetting=()=>{
           rules={[{required: true}]}
         >
           <Select
-            showSearch
-            optionFilterProp="children"
+            mode="tags"
+            style={{ width: '100%', }}
+            placeholder="选择配置模块"
             onChange={onChange}
-            onSearch={onSearch}
-            filterOption={filterOption}
-            options={[
-              {
-                value: 'jack',
-                label: 'Jack',
-              },
-              {
-                value: 'lucy',
-                label: 'Lucy',
-              },
-              {
-                value: 'tom',
-                label: 'Tom',
-              },
-            ]}
+            options={moduleOptions}
           />
         </Form.Item>
         <Form.Item
@@ -200,13 +315,30 @@ const BaseSetting=()=>{
          >
           <TextArea rows={5}/>
          </Form.Item>
+        <Form.Item
+          label="输入设备编号"
+          name="deviceId"
+          rules={[{required: true}]}
+        >
+          <Select
+            style={{ width: 150 }}
+            options={deviceOption}
+          />
+        </Form.Item>
          <Form.Item
           label="备注"
           name="remark"
-          rules={[{required: true}]}
+          rules={[{required: false}]}
          >
           <Input/>
          </Form.Item>
+        <Form.Item
+          label="配置ID"
+          name="id"
+          hidden
+        >
+          <Input/>
+        </Form.Item>
       </Form>
     </Modal>
   </>)
