@@ -2,12 +2,11 @@ import React, { useEffect, useRef, useState } from 'react';
 import {
   Button,
   Card,
-  DatePicker,
-  Form,
+  DatePicker, Drawer,
+  Form, Image,
   Input,
   InputNumber,
   Modal,
-  notification,
   Popconfirm,
   Row,
   Select,
@@ -31,7 +30,7 @@ import TextArea from 'antd/es/input/TextArea';
 import axios from 'axios';
 import { adddArticle, delArticle, findArticleImgRelList, findArticleList, updateArticleImpl } from '@/services/article';
 import { findDeviceList } from '@/services/device';
-import { isEmpty } from '@/utils/utils';
+import { isEmpty, openNotification } from '@/utils/utils';
 
 
 const Article = () => {
@@ -43,8 +42,7 @@ const Article = () => {
   const[isModalOpen,setIsModalOpen]=useState(false);
   const[shortModalOpen,setShotModalOpen]=useState(false);
   const[orginalModalOpen,setOrignalModalOpen]=useState(false);
-
-
+  const [openDrawer,setOpenDrawer]=useState(false);
 
   const[articleDataSource,setArticleDataSource]=useState([]);
   const[articleImgList,setArticleImgList]=useState([]);
@@ -55,18 +53,17 @@ const Article = () => {
   const [selectedRowKeys, setSelectedRowKeys] = useState([])
   const [selectedRows, setSelectedRows] = useState([])
 
+  const [selectedDrawRowKeys, setSelectedDrawRowKeys] = useState([])
+  const [selectedDrawRows, setSelectedDrawRows] = useState([])
+
   const[totals,setTotals]=useState(0);
 
   const[optionValue,setOptionValue]=useState();
   // 初始化设备
   const [deviceOption,setDeviceOption]=useState([]);
+  const [drawTableData,setDrawTableData]=useState([]);
 
 
-  const openNotification = (type,content) => {
-    notification[type]({
-      message: content,
-    });
-  };
 
 
   const  initDviceOption =()=>{
@@ -165,6 +162,24 @@ const Article = () => {
 
     });
   }
+
+
+  const imgColums=[
+    {
+      title: 'ID',
+      dataIndex: 'id',
+      key: 'id',
+    },
+    {
+      title: '图片',
+      dataIndex: 'picPath',
+      key: 'picPath',
+      render:(text)=>{
+          return  <Image width={200}  src={text} />
+      }
+    }
+  ]
+
 
 
   const columns=[
@@ -281,6 +296,31 @@ const Article = () => {
   ];
 
 
+  const bindImgDatasPic=()=>{
+    const param= articleModalForm.getFieldsValue();
+    const articleId=param.id
+    let  records=[]
+         records = selectedDrawRows
+    for (const item of records) {
+             const relParam={}
+             relParam.articleId=articleId
+             relParam.imageId=item.id
+             relParam.imagePath=item.picPath
+            axios.post('http://101.201.33.155:8099/image/web/addRelImg', relParam, {
+         //   axios.post('http://localhost:8099/image/web/addRelImg', relParam, {
+              headers: {'Content-Type': 'application/json'},
+            }).then((response) => {
+              console.log('response' ,response);
+              setOpenDrawer(false)
+              setSelectedDrawRowKeys([])
+              setSelectedDrawRows([])
+            })
+    }
+    //
+    // eslint-disable-next-line no-use-before-define
+    refreshImg()
+  }
+
   const addThemModalClick=()=>{
          operationRef.current.data="新增"
          setIsModalOpen(true)
@@ -323,12 +363,10 @@ const Article = () => {
 
 
   const handleChange = ({ fileList: newFileList }) => {
-    setArticleImgList(newFileList)
+        setArticleImgList(newFileList)
   };
 
   const onRemoveImgRel=(file)=>{
-    console.log('删除111' ,file.uid);
-
     axios.delete(`http://localhost:8099/image/web/delRelImg/${file.uid}`, {
       headers: {'Content-Type': 'application/json'},
     }).then((response) => {
@@ -338,11 +376,9 @@ const Article = () => {
 
   const  updateArticle=(record)=>{
 
-     console.log('编辑record' ,record.id);
       const  articleId=record.id
       findArticleImgRelList(articleId).then(res => {
         const result=res.res
-        console.log('---list----' ,result);
         const fileListArr=[]
         for(let i=0;i<result.length;i+=1){
           const fileItem={}
@@ -353,7 +389,6 @@ const Article = () => {
                 fileListArr.push(fileItem)
         }
         setArticleImgList(fileListArr);
-
       }).catch((error) => {
         openNotification('error',`查询图片ID列表失败！,原因:${error}`)
       });
@@ -428,9 +463,7 @@ const Article = () => {
             openNotification('error',`新增一篇文章失败,失败原因:${error}`)
         });
       }
-
       // 【  编辑方法 】
-
         if(operationRef.current.data ==="编辑"){
           updateArticleImpl(param).then(res => {
               if(res.code === 0){
@@ -557,6 +590,12 @@ const Article = () => {
     setSelectedRows(selectedRows)
   }
 
+  const onDrawTableSelectChange = (selectedDrawRowKeys, selectedDrawRows) => {
+    setSelectedDrawRowKeys(selectedDrawRowKeys)
+    setSelectedDrawRows(selectedDrawRows)
+  }
+
+
 
   const onOptionChange=(value)=>{
       setOptionValue(value);
@@ -597,17 +636,9 @@ const onInputChange=(e)=>{
       }
     }
    setArticleDataSource(newDataSource)
-
-  // debounce((e) => {
-  //   console.log(e);
-  //   //  doSearch(e)
-  // }, 800)
 }
 
   const upLoadImgRel = (options) => {
-    // 获取参数
-    const param= articleModalForm.getFieldsValue();
-
     // 上传图片风格
     const {file, onSuccess, onError} = options;
     const formData = new FormData();
@@ -646,8 +677,8 @@ const onInputChange=(e)=>{
     formData.append('articleNum',  upLoadForm.articleNum);
     formData.append('channel',  upLoadForm.articleChannel);
     //
-    // axios.post('http://101.201.33.155:8099/article/web/import/shortArticle/file', formData, {
-    axios.post('http://localhost:8099/article/web/import/shortArticle/file', formData, {
+     axios.post('http://101.201.33.155:8099/article/web/import/shortArticle/file', formData, {
+    // axios.post('http://localhost:8099/article/web/import/shortArticle/file', formData, {
       headers: {'Content-Type': 'multipart/form-data'}
       // eslint-disable-next-line no-unused-vars
     }).then((res) => {
@@ -676,8 +707,8 @@ const onInputChange=(e)=>{
     formData.append('articleNum',  upLoadForm.articleNum);
     formData.append('channel',  upLoadForm.articleChannel);
     //
-    // axios.post('http://101.201.33.155:8099/article/web/import/originalArticle/file', formData, {
-    axios.post('http://localhost:8099/article/web/import/originalArticle/file', formData, {
+     axios.post('http://101.201.33.155:8099/article/web/import/originalArticle/file', formData, {
+    // axios.post('http://localhost:8099/article/web/import/originalArticle/file', formData, {
       headers: {'Content-Type': 'multipart/form-data'}
       // eslint-disable-next-line no-unused-vars
     }).then((res) => {
@@ -692,10 +723,61 @@ const onInputChange=(e)=>{
   };
 
 
+  // refresh
+  const refreshImg = () => {
+    const formParam= articleModalForm.getFieldsValue()
+    const  articleId=formParam.id
+    findArticleImgRelList(articleId).then(res => {
+      const result=res.res
+      const fileListArr=[]
+      for(let i=0;i<result.length;i+=1){
+        const fileItem={}
+        fileItem.uid=result[i].id
+        fileItem.status= 'done'
+        fileItem.name=result[i].imagePath
+        fileItem.url=result[i].imagePath
+        fileListArr.push(fileItem)
+      }
+      setArticleImgList(fileListArr);
+    }).catch((error) => {
+      openNotification('error',`查询图片ID列表失败！,原因:${error}`)
+    });
+  };
+
   //  打开图片
-  const imgDataBase=()=>{
-    // 打开modal ， 查询对应的数据把数据渲染到modal里面去，
-  }
+  const imgDataBase = () => {
+    const formParam= articleModalForm.getFieldsValue()
+    const {deviceId} = formParam
+    if (deviceId === null) {
+        openNotification('warn', `请先选择具体的设备`, 5);
+        return;
+    }
+    setOpenDrawer(true);
+    const accountStr = localStorage.getItem('user');
+    const accountObj = JSON.parse(accountStr);
+    const { userAccount } = accountObj;
+    const param = {};
+    param.deviceId = deviceId;
+    param.accountId = userAccount;
+    param.groupCodeId = deviceId;
+    axios.post('http://101.201.33.155:8099/image/web/imageList', param, { headers: { 'Content-Type': 'application/json' } })
+      .then((response) => {
+        const { data: { res } } = response;
+        console.log('####  res  ######' ,res);
+        const fileListArr = [];
+        for (let i = 0; i < res.length; i += 1) {
+          const fileItem = {};
+                fileItem.id = res[i].id;
+                fileItem.picPath = res[i].absolutelyPath;
+                fileListArr.push(fileItem);
+        }
+        setDrawTableData(fileListArr);
+      })
+      .catch((error) => {
+        console.error('文件上传失败', error);
+      });
+  };
+
 
   return (
     <GridContent>
@@ -746,7 +828,7 @@ const onInputChange=(e)=>{
         open={isModalOpen}
         onOk={onModalOk}
         onCancel={()=>{  setIsModalOpen(false)}}
-        width='60%'
+        width='50%'
         style={{height:'500px'}}
         destroyOnClose
       >
@@ -799,6 +881,7 @@ const onInputChange=(e)=>{
             label="输入设备编号"
             name="deviceId"
             rules={[{required: true}]}
+
           >
             <Select
               style={{ width: 150 }}
@@ -834,11 +917,9 @@ const onInputChange=(e)=>{
                 详情图片
               </Upload>
               <Button type="primary" style={{paddingBottom:'0'}}  onClick={imgDataBase}> 图库选择</Button>
+              <Button type="primary" style={{paddingBottom:'0'}}  onClick={refreshImg}> 刷新</Button>
             </Space>
-
           </Form.Item>
-
-
           <Form.Item
             label="主键Id"
             name="id"
@@ -1005,6 +1086,27 @@ const onInputChange=(e)=>{
           </Form.Item>
         </Form>
       </Modal>
+      { /** **************************************** 新增 【抽屉】 ************************************* * */}
+      <Drawer
+         width={400}
+         title="图库列表展示"
+         open={openDrawer}
+         onClose={()=>{setOpenDrawer(false)}}
+      >
+        <Space>
+            <Button type= 'primary' icon={<PlusOutlined />} onClick={bindImgDatasPic}>确认</Button>
+        </Space>
+        <Table
+          rowKey="id"
+          columns={imgColums}
+          dataSource={drawTableData}
+          rowSelection={{
+            selectedDrawRowKeys,
+            onChange: onDrawTableSelectChange
+          }}
+          pagination={false}
+        />
+      </Drawer>
 
     </GridContent>
 

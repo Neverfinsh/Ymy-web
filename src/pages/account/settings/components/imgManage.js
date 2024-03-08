@@ -4,7 +4,6 @@ import { Button, Card, Modal, Select, Space, Upload } from 'antd';
 import axios from 'axios';
 import { findDeviceList } from '@/services/device';
 import { openNotification } from '@/utils/utils';
-import { findSettingList } from '@/services/setting';
 
 const getBase64 = (file) =>
   new Promise((resolve, reject) => {
@@ -22,18 +21,17 @@ const imgManage = () => {
   const [previewTitle, setPreviewTitle] = useState('');
   // 初始化设备
   const [deviceOption,setDeviceOption]=useState([]);
-  const[optionValue,setOptionValue]=useState();
+  const[optionValue,setOptionValue]=useState(null);
   const [fileList, setFileList] = useState([]);
-  const [moduleOptions,setModuleOptions]=useState([]);
-
-  const [imageModuleType,setImageModuleType]=useState();
+ // const [moduleOptions,setModuleOptions]=useState([]);
+ // const [imageModuleType,setImageModuleType]=useState();
 
 
   // eslint-disable-next-line react-hooks/rules-of-hooks
-  useEffect(()=>{
-    initImgList()
-    initImgCodeType()
-  },[])
+  // useEffect(()=>{
+  //   initImgList()
+  //   initImgCodeType()
+  // },[])
 
   // eslint-disable-next-line react-hooks/rules-of-hooks
   useEffect(()=>{
@@ -42,41 +40,47 @@ const imgManage = () => {
 
 
 
-  const  initImgCodeType =()=>{
-    const userStr=localStorage.getItem("user");
-    const user=JSON.parse(userStr);
-    const param={}
-    param.module="_IMG_MODULE"
-    param.deviceId=null
-    param.accountId=user.userAccount
-    findSettingList(param).then(result=>{
-      const {res}=result
-      const dataOptions=[];
-      for(const item of res){
-        const obj={}
-              obj.label=item.code
-              obj.value=item.name
-        dataOptions.push(obj)
-      }
-      const uniqueArr = dataOptions.filter((obj, index, self) =>
-        index === self.findIndex((t) => (
-          t.label === obj.label && t.value === obj.value
-        ))
-      );
-      setModuleOptions(uniqueArr)
-    }).catch(err=>{
-      console.log(' 发生错误' ,err);
-    })
-  }
+  // const  initImgCodeType =()=>{
+  //   const userStr=localStorage.getItem("user");
+  //   const user=JSON.parse(userStr);
+  //   const param={}
+  //   param.module="_IMG_MODULE"
+  //   param.deviceId=null
+  //   param.accountId=user.userAccount
+  //   findSettingList(param).then(result=>{
+  //     const {res}=result
+  //     const dataOptions=[];
+  //     for(const item of res){
+  //       const obj={}
+  //             obj.label=item.code
+  //             obj.value=item.name
+  //       dataOptions.push(obj)
+  //     }
+  //     const uniqueArr = dataOptions.filter((obj, index, self) =>
+  //       index === self.findIndex((t) => (
+  //         t.label === obj.label && t.value === obj.value
+  //       ))
+  //     );
+  //     setModuleOptions(uniqueArr)
+  //   }).catch(err=>{
+  //     console.log(' 发生错误' ,err);
+  //   })
+  // }
 
   const initImgList=()=>{
+    if(optionValue===null){
+       openNotification('warn',`请先选择具体的设备`)
+       document.getElementById('optionId').focus();
+       return
+    }
     const  accountStr=localStorage.getItem("user")
     const  accountObj=JSON.parse(accountStr);
     const  {userAccount} = accountObj
     const param={}
           param.deviceId=optionValue
           param.accountId=userAccount
-          param.groupCodeId='_IMG_MODULE'
+          // param.groupCodeId='_IMG_MODULE'
+          param.groupCodeId=optionValue
     axios.post('http://101.201.33.155:8099/image/web/imageList', param, { headers: {'Content-Type': 'application/json'}})
       .then((response) => {
       const {data:{res}} = response
@@ -97,7 +101,13 @@ const imgManage = () => {
   }
 
 
+
+
   const handleCancel = () => setPreviewOpen(false);
+
+
+
+
 
   const handlePreview = async (file) => {
     if (!file.url && !file.preview) {
@@ -108,12 +118,24 @@ const imgManage = () => {
     setPreviewTitle(file.name || file.url.substring(file.url.lastIndexOf('/') + 1));
   };
 
+
+
+
   const handleChange = ({ fileList: newFileList }) => {
     setFileList(newFileList)
   };
 
 
+
+
   const handleUploadChange = (options) => {
+
+    if(optionValue===null){
+      openNotification('warn',`图片上传前,请先选择具体的设备`)
+      document.getElementById('optionId').focus();
+      return
+    }
+
     // 获取参数
     const userStr=localStorage.getItem("user");
     const user=JSON.parse(userStr);
@@ -123,7 +145,7 @@ const imgManage = () => {
     formData.append('files', file);
     formData.append('deviceId',    optionValue);
     formData.append('accountId',   user.userAccount);
-    formData.append('groupCodeId', imageModuleType);
+    formData.append('groupCodeId', optionValue);
 
     axios.post('http://101.201.33.155:8099/image/web/uploadImg', formData, {
       headers: {'Content-Type': 'multipart/form-data'},
@@ -136,7 +158,7 @@ const imgManage = () => {
         onError('上传失败');
       });
   };
-  
+
 
   const  initDviceOption =()=>{
 
@@ -145,10 +167,10 @@ const imgManage = () => {
     const  {userAccount} = accountObj
 
     const  options=[]
-    const  defaultObj={}
-    defaultObj.value='all'
-    defaultObj.label='------全部------'
-    options.push(defaultObj)
+    // const   defaultObj={}
+    //         defaultObj.value='all'
+    //         defaultObj.label='------全部------'
+    //         options.push(defaultObj)
 
     findDeviceList(userAccount).then(res=>{
       if(res.code===0){
@@ -191,29 +213,24 @@ const imgManage = () => {
     })
   }
 
+  // const beforeUploadEvent=()=>{
+  //   console.log('调用之前的代码' ,);
+  //   return false
+  // }
 
-  const moduleChange=(value)=>{
-        setImageModuleType(value)
-  }
   return (
     <>
         <Space  style={{ marginBottom: 16}}>
           <Button type='primary' icon={<PlusOutlined />} >新增图片风格</Button>
           <a style={{color:'black'}}>当前类型:</a>
-          <Select
-            style={{ width: 150 }}
-            options={moduleOptions}
-            onChange={moduleChange}
-          />
           <label>设备编号:</label>
           <Select
-            defaultValue="all"
             style={{ width: 150 }}
             options={deviceOption}
             onChange={onOptionChange}
+            id="optionId"
           />
-
-          <Button    type= 'primary'  icon={<SearchOutlined/>}   >查询</Button>
+          <Button    type= 'primary'  icon={<SearchOutlined/>} onClick={initImgList}  >查询</Button>
           <Button type='primary' icon={<ReloadOutlined />} >刷新</Button>
       </Space>
 
@@ -226,6 +243,7 @@ const imgManage = () => {
           onPreview={handlePreview}
           onChange={handleChange}
           onRemove={onRemove}
+        //  beforeUpload={beforeUploadEvent}
         >
           上传图片
         </Upload>

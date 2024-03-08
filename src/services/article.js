@@ -1,8 +1,8 @@
 import request from 'umi-request';
 
-// const url = 'http://101.201.33.155:8099';
+const url = 'http://101.201.33.155:8099';
 
- const url = 'http://localhost:8099';
+// const url = 'http://localhost:8099';
 /**
  *  获取所有文章列表
  * @returns {Promise<void>}

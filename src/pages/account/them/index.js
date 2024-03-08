@@ -512,8 +512,8 @@ const Center = () => {
     formData.append('articleNum',  upLoadForm.importArticleNum);
     formData.append('channel',  upLoadForm.importArticleChannel);
     //
-   // axios.post('http://101.201.33.155:8099/them/import/params/file', formData, {
-    axios.post('http://localhost:8099/them/import/params/file', formData, {
+     axios.post('http://101.201.33.155:8099/them/import/params/file', formData, {
+    // axios.post('http://localhost:8099/them/import/params/file', formData, {
       headers: {'Content-Type': 'multipart/form-data'}
       // eslint-disable-next-line no-unused-vars
     }).then((res) => {
@@ -981,7 +981,4 @@ const onDelBath=()=>{
   );
 };
 
-export default connect(({ loading, user }) => ({
-  currentUser: user.currentUser,
-  currentUserLoading: loading.effects['user/fetchCurrentUser'],
-}))(Center);
+export default connect()(Center);

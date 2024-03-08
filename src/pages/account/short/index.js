@@ -188,7 +188,8 @@ const Center = ({ currentUser = {}, currentUserLoading, dispatch }) => {
     const {file, onSuccess, onError} = options;
     const formData = new FormData();
     formData.append('file', file);
-    axios.post('http://localhost:8099/them/import/all/file/', formData, {
+    axios.post('http://101.201.33.155:8099/them/import/all/file/', formData, {
+   // axios.post('http://localhost:8099/them/import/all/file/', formData, {
       headers: {'Content-Type': 'multipart/form-data'},
     }).then((response) => {
       console.log('response' ,response);
