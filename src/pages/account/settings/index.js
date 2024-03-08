@@ -101,4 +101,4 @@ const Settings = ({ currentUser, dispatch }) => {
 
 };
 
-export default connect(({ user }) => ({ currentUser: user.currentUser }))(Settings);
+export default connect()(Settings);

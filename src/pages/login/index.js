@@ -1,9 +1,8 @@
 import React, { useState } from 'react';
-import { Form, Input, Button, Alert, Checkbox } from 'antd';
+import { Alert, Button, Checkbox, Form, Input } from 'antd';
 import { LockTwoTone, UserOutlined } from '@ant-design/icons';
-import { connect,history } from 'umi';
+import { connect, history } from 'umi';
 import styles from './index.less';
-import { adddArticle } from '@/services/article';
 import { findDeviceList, userLogin } from '@/services/device';
 import { openNotification } from '@/utils/utils';
 
@@ -128,7 +127,4 @@ const Login = (props) => {
   );
 };
 
-export default connect(({ login: { status }, loading }) => ({
-  status,
-  submitting: loading.effects['login/login'],
-}))(Login);
+export default connect()(Login);

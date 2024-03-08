@@ -324,7 +324,4 @@ const Center = ({ currentUser = {}, currentUserLoading, dispatch }) => {
   );
 };
 
-export default connect(({ loading, user }) => ({
-  currentUser: user.currentUser,
-  currentUserLoading: loading.effects['user/fetchCurrentUser'],
-}))(Center);
+export default connect()(Center);

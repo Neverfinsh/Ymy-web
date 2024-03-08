@@ -904,6 +904,7 @@ const onInputChange=(e)=>{
             label="文章配图"
             name="articleImg"
             rules={[{required: true}]}
+            hidden={operationRef.current.data==='新增'}
           >
             <Space direction="horizontal">
               <Upload
