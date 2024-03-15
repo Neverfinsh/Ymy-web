@@ -102,11 +102,11 @@ const Center = ({ currentUser = {}, currentUserLoading, dispatch }) => {
   const [tabKey, setTabKey] = useState('inbox');
 
   // 【获取当前用户信息】
-  useEffect(() => {
-    dispatch({
-      type: 'user/fetchCurrentUser',
-    });
-  }, [dispatch]);
+  // useEffect(() => {
+  //   dispatch({
+  //     type: 'user/fetchCurrentUser',
+  //   });
+  // }, [dispatch]);
 
   // 【切换标签】
   const onTabChange = (key) => {

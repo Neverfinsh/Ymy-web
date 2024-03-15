@@ -27,12 +27,14 @@ const Login = (props) => {
     const param=values
     userLogin(param).then(res=>{
       if(res.code === 0){
+        console.log('登录结果返回:' ,res);
         openNotification('success',`登录成功`,5)
         const     userInfo=res.res;
         const     user={}
                   user.userAccount=userInfo.userAccount;
                   user.userUserName=userInfo.userUserName
         localStorage.setItem("user",JSON.stringify(user))
+        localStorage.setItem("userUserName",userInfo.userUserName)
         //  存入设备信息
         const account=  userInfo.userAccount
         // eslint-disable-next-line no-shadow
@@ -58,16 +60,6 @@ const Login = (props) => {
     }).catch((error)=>{
       openNotification('error',`登录失败！失败原因:${error}`)
     })
-    // dispatch({
-    //   type: 'login/login',
-    //   payload: { ...values },
-    // }).then(res =>{
-    //      let user={}
-    //          user.userId='003'
-    //          user.diviceId='003'
-    //      localStorage.setItem("user",JSON.stringify(user))
-    // });
-
   };
 
   return (
@@ -93,7 +85,8 @@ const Login = (props) => {
           <Input
             size="large"
             placeholder="用户名"
-            prefix={<UserOutlined style={{ color: 'transparent' }}/* className={styles.prefixIcon} *//>}
+            // prefix={<UserOutlined style={{ color: 'transparent' }} className={styles.prefixIcon} />}
+            prefix={<UserOutlined   className={styles.prefixIcon} /> }
           />
         </FormItem>
         <FormItem

@@ -221,8 +221,6 @@ const imgManage = () => {
   return (
     <>
         <Space  style={{ marginBottom: 16}}>
-          <Button type='primary' icon={<PlusOutlined />} >新增图片风格</Button>
-          <a style={{color:'black'}}>当前类型:</a>
           <label>设备编号:</label>
           <Select
             style={{ width: 150 }}

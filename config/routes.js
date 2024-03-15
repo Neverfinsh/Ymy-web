@@ -56,12 +56,12 @@ export default [
             name: 'account',
             icon: 'user',
             routes: [
-              // {
-              //   path: '/account/topic',
-              //   name: '话题列表',
-              //   icon: 'user',
-              //   component: './account/topic',
-              // },
+              {
+                path: '/account/topic',
+                name: '话题列表',
+                icon: 'user',
+                component: './account/topic',
+              },
               {
                 path: '/account/topic/detail',
                 name: '话题列表',

@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
+  Affix,
   Button,
   Card,
   DatePicker, Drawer,
@@ -11,7 +12,7 @@ import {
   Row,
   Select,
   Space,
-  Spin,
+  Spin, Switch,
   Table, Upload,
 } from 'antd';
 import { connect, history } from 'umi';
@@ -57,6 +58,7 @@ const Article = () => {
   const [selectedDrawRows, setSelectedDrawRows] = useState([])
 
   const[totals,setTotals]=useState(0);
+  const[totalsExpired,setTotalsExpired]=useState(0);
 
   const[optionValue,setOptionValue]=useState();
   // 初始化设备
@@ -67,17 +69,11 @@ const Article = () => {
 
 
   const  initDviceOption =()=>{
-
     const  accountStr=localStorage.getItem("user")
     const  accountObj=JSON.parse(accountStr);
     const  {userAccount} = accountObj
 
     const  options=[]
-    const  defaultObj={}
-           defaultObj.value='all'
-           defaultObj.label='------全部------'
-    options.push(defaultObj)
-
     findDeviceList(userAccount).then(res=>{
       if(res.code===0){
         const   deviceNames=[]
@@ -95,6 +91,7 @@ const Article = () => {
       openNotification('error',`获取设备编号失败!原因:${error}`,3)
     });
   }
+
 
   useEffect(()=>{
     setDeviceOption(deviceOption)
@@ -127,11 +124,29 @@ const Article = () => {
       // eslint-disable-next-line no-restricted-syntax,no-plusplus
       setArticleDataSource(list);
       setTotals(list.length)
+      // eslint-disable-next-line no-use-before-define
+          const len=checkExpired(list)
+                 setTotalsExpired(len);
     }).catch((error) => {
       openNotification('error',`查询列表失败！,原因:${error}`)
     });
     tableLoadRef.current.flag=false
   }
+
+  const checkExpired=(list)=>{
+    const nowTime=moment()
+        const arr=[]
+        for(let i=0;i<list.length;i += 1){
+            const sendTime=moment(list[i].articleSendTime)
+            if(!nowTime.isBefore(sendTime)){
+               arr.push(list[i])
+            }
+        }
+    console.log('arr' ,arr.length);
+    console.log('list' ,list);
+    return arr.length;
+  }
+
 
   // 【获取当前用户信息】
   useEffect(() => {
@@ -189,11 +204,11 @@ const Article = () => {
       key: 'id',
       onFilter: (value, record) => record.id.indexOf(value) === 0,
     },
-    {
-      title: '账号',
-      dataIndex: 'uid',
-      key: 'userId',
-    },
+    // {
+    //   title: '账号',
+    //   dataIndex: 'uid',
+    //   key: 'userId',
+    // },
     {
       title: '设备编号',
       dataIndex: 'deviceId',
@@ -204,18 +219,22 @@ const Article = () => {
     //   dataIndex: 'articleNum',
     //   key: 'articleNum',
     // },
-    {
-      title: '主题名',
-      dataIndex: 'articleThem',
-      key: 'articleThem',
-      width: '20%',
-    },
     // {
-    //   title: '标题',
-    //   dataIndex: 'articleTitle',
-    //   key: 'articleTitle',
-    //   ellipsis:true,
+    //   title: '主题名',
+    //   dataIndex: 'articleThem',
+    //   key: 'articleThem',
+    //   width: '20%',
     // },
+    {
+      title: '标题',
+      dataIndex: 'articleTitle',
+      key: 'articleTitle',
+      // ellipsis:true,
+      render: (text) => {
+        return (text===""  || text===null )?'暂无标题':<a style={{fontWeight:'bold'}}>{text}</a>
+      }
+    },
+
     {
       title: '文章内容',
       dataIndex: 'articleContent',
@@ -223,6 +242,25 @@ const Article = () => {
       ellipsis:true,
       width: '25%',
       onFilter: (value, record) => record.articleContent.indexOf(value) === 0,
+      render: (text) => {
+        return <a style={{fontWeight:'bold'}}>{text}</a>
+      }
+    },
+    {
+      title: '图片',
+      dataIndex: 'imgList',
+      key: 'imgList',
+      render:(values)=>{
+        return (
+          <div style={{width:100}}>
+            <Space direction="horizontal">
+              { values !==null && values.map((imageUrl, index) => (
+                <Image key={index} src={imageUrl} alt={`Image ${index}`} />
+              ))}
+            </Space>
+          </div>
+        )
+      }
     },
     // {
     //   title: '状态',
@@ -274,7 +312,7 @@ const Article = () => {
       render: (_, record) => [
         <Space key="opt">
           {/* eslint-disable-next-line no-use-before-define */}
-          <a  onClick={()=>{detailArticle(record)}}>详情</a>
+          {/* <a  onClick={()=>{detailArticle(record)}}>详情</a> */}
           {/* eslint-disable-next-line no-use-before-define */}
           <a  onClick={()=>updateArticle(record)}>编辑</a>
           <Popconfirm
@@ -324,6 +362,10 @@ const Article = () => {
   const addThemModalClick=()=>{
          operationRef.current.data="新增"
          setIsModalOpen(true)
+         articleModalForm.setFieldsValue({
+          "articleSendTime":moment().add(10,'minutes'),
+          "articleNum":1
+    })
   }
 
 
@@ -561,10 +603,17 @@ const Article = () => {
     // todo：  需要测试
     const newOrderselectedRows=shuffleArray(selectedRows)
     // eslint-disable-next-line no-restricted-syntax
+  //  const  newData=selectedRows[0].articleSendTime
+    const  newData= moment()
+    console.log('--newData--' ,moment(newData));
     for (const param of newOrderselectedRows) {
-          const now = moment();
-          const futureTime = now.add(10*count, 'minutes');
+          const now1 = newData
+         // 生成1-20内的随机整数
+          const randomNumber = Math.floor(Math.random() * 20) + 1;
+          console.log(" 批量发布:生成1-20内的随机整数:",randomNumber);
+          const futureTime = now1.add(10+Number(count), 'minutes');
           const newArticleSendTime=futureTime.format('YYYY-MM-DD HH:mm:ss')
+          console.log('articleSendTime' ,newArticleSendTime);
           param.articleSendTime=newArticleSendTime
           param.updateTime=moment().format('YYYY-MM-DD HH:mm:ss')
 
@@ -591,8 +640,8 @@ const Article = () => {
   }
 
   const onDrawTableSelectChange = (selectedDrawRowKeys, selectedDrawRows) => {
-    setSelectedDrawRowKeys(selectedDrawRowKeys)
-    setSelectedDrawRows(selectedDrawRows)
+        setSelectedDrawRowKeys(selectedDrawRowKeys)
+        setSelectedDrawRows(selectedDrawRows)
   }
 
 
@@ -641,12 +690,21 @@ const onInputChange=(e)=>{
   const upLoadImgRel = (options) => {
     // 上传图片风格
     const {file, onSuccess, onError} = options;
+    const param= articleModalForm.getFieldsValue();
+    const {deviceId,id} = param
+
+    const  accountStr=localStorage.getItem("user")
+    const  accountObj=JSON.parse(accountStr);
+    const  {userAccount} = accountObj
+    const accountId=userAccount
+
+
     const formData = new FormData();
     formData.append('files', file);
-    formData.append('deviceId',  'LIWU004');
-    formData.append('accountId', '15084762140');
-    formData.append('groupCodeId', '005');
-    formData.append('articleId', '935');
+    formData.append('deviceId',  deviceId);
+    formData.append('accountId', accountId);
+    formData.append('groupCodeId', deviceId);
+    formData.append('articleId', id);
 
     axios.post('http://101.201.33.155:8099/image/web/uploadImgRel', formData, {
       headers: {'Content-Type': 'multipart/form-data'},
@@ -793,7 +851,6 @@ const onInputChange=(e)=>{
               {/* eslint-disable-next-line jsx-a11y/label-has-associated-control */}
               <label>设备编号:</label>
               <Select
-                defaultValue="all"
                 style={{ width: 150 }}
                 options={deviceOption}
                 onChange={onOptionChange}
@@ -801,6 +858,9 @@ const onInputChange=(e)=>{
               <Input placeholder= "输入搜索的内容、序号、主题..."  onChange={onInputChange} style={{width:250}} />
               <Button    type= 'primary'  icon={<SearchOutlined/>} onClick={onSearch} >查询</Button>
               <Button   type= 'primary'   icon={<ReloadOutlined />}  onClick={refreshArtiList}>刷新</Button>
+              <a>待发布总计: {totals} 篇  </a>
+              <a style={{ color:'#F1D40D'}} >过期: {totalsExpired} 篇 </a>
+
             </Space>
             <Spin spinning={tableLoading}>
               <Table
@@ -831,6 +891,7 @@ const onInputChange=(e)=>{
         width='50%'
         style={{height:'500px'}}
         destroyOnClose
+        zIndex={1001}
       >
         <Form
           form={articleModalForm}
@@ -845,6 +906,13 @@ const onInputChange=(e)=>{
             rules={[{required: true}]}
           >
             <TextArea   rows={4}  showCount   readOnly={operationRef.current.data === "详情"} />
+          </Form.Item>
+          <Form.Item
+            label="是否生成标题"
+            name="articleTitleStatus"
+            rules={[{required: true}]}
+          >
+            <Switch defaultChecked />
           </Form.Item>
           <Form.Item
             label="标题"
@@ -890,16 +958,16 @@ const onInputChange=(e)=>{
             />
             {/* <Input  readOnly={operationRef.current.data === "详情"} /> */}
           </Form.Item>
-          <Form.Item
-            label="选择发布平台"
-            name="articleChannel"
-            rules={[{required: true}]}
-          >
-            <Select>
-              <Select.Option value="demo">今日头条</Select.Option>
-              <Select.Option value="demo">小红书</Select.Option>
-            </Select>
-          </Form.Item>
+          {/* <Form.Item */}
+          {/*  label="选择发布平台" */}
+          {/*  name="articleChannel" */}
+          {/*  rules={[{required: true}]} */}
+          {/* > */}
+          {/*  <Select> */}
+          {/*    <Select.Option value="demo">今日头条</Select.Option> */}
+          {/*    <Select.Option value="demo">小红书</Select.Option> */}
+          {/*  </Select> */}
+          {/* </Form.Item> */}
           <Form.Item
             label="文章配图"
             name="articleImg"
@@ -1089,13 +1157,18 @@ const onInputChange=(e)=>{
       </Modal>
       { /** **************************************** 新增 【抽屉】 ************************************* * */}
       <Drawer
+
          width={400}
          title="图库列表展示"
          open={openDrawer}
          onClose={()=>{setOpenDrawer(false)}}
+         getContainer={false}
+         zIndex={1002}
       >
-        <Space>
+        <Space style={{marginBottom:50}}>
+          <Affix offsetTop={100}>
             <Button type= 'primary' icon={<PlusOutlined />} onClick={bindImgDatasPic}>确认</Button>
+          </Affix>
         </Space>
         <Table
           rowKey="id"

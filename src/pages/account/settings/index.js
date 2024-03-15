@@ -1,8 +1,7 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { Menu } from 'antd';
 import { GridContent } from '@ant-design/pro-layout';
 import { connect } from 'umi';
-import BaseView from './components/base';
 import styles from './style.less';
 import DeviceView from '@/pages/account/settings/components/device';
 import ImgManage from '@/pages/account/settings/components/imgManage';
@@ -10,7 +9,7 @@ import BaseSetting from '@/pages/account/settings/components/BaseSetting';
 
 const { Item } = Menu;
 
-const Settings = ({ currentUser, dispatch }) => {
+const Settings = () => {
   let main = useRef(null);
 
   const [mode, setMode] = useState('inline');
@@ -42,17 +41,17 @@ const Settings = ({ currentUser, dispatch }) => {
     });
   };
 
-  useEffect(() => {
-    // 为了能及时查看效果
-    dispatch({
-      type: 'user/fetchCurrentUser',
-    });
-    window.addEventListener('resize', resize);
-    resize();
-    return () => {
-      window.removeEventListener('resize', resize);
-    };
-  }, [dispatch]);
+  // useEffect(() => {
+  //   // 为了能及时查看效果
+  //   dispatch({
+  //     type: 'user/fetchCurrentUser',
+  //   });
+  //   window.addEventListener('resize', resize);
+  //   resize();
+  //   return () => {
+  //     window.removeEventListener('resize', resize);
+  //   };
+  // }, [dispatch]);
 
   const getMenu = () => {
     return Object.keys(menuMap).map((item) => <Item key={item}>{menuMap[item]}</Item>);

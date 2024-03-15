@@ -19,6 +19,7 @@ const AvatarDropdown = ({ currentUser = { avatar: '', username: '' }, menu, disp
     history.push(`/account/${key}`);
   };
 
+
   const menuHeaderDropdown = (
     <Menu className={styles.menu} selectedKeys={[]} onClick={onMenuClick}>
       {menu && (
@@ -45,14 +46,17 @@ const AvatarDropdown = ({ currentUser = { avatar: '', username: '' }, menu, disp
     <HeaderDropdown overlay={menuHeaderDropdown}>
       <span className={`${styles.action} ${styles.account}`}>
         <Avatar size="small" className={styles.avatar} src={currentUser.avatar} alt="avatar" />
-        <span className={`${styles.name} anticon`}>{currentUser.username}</span>
-        <span className={`${styles.name} anticon`}>测试人员</span>
+        {/* <span className={`${styles.name} anticon`}>测试人员</span> */}
       </span>
     </HeaderDropdown>
   ) : (
-    <span className={`${styles.action} ${styles.account}`}>
-      {/*<Spin size="small" style={{ marginLeft: 8, marginRight: 8 }} />*/}
-    </span>
+
+    <HeaderDropdown overlay={menuHeaderDropdown}>
+      <span className={`${styles.action} ${styles.account}`}>
+        <Avatar size="small" className={styles.avatar} src="http://101.201.33.155/ymystatic/img/微信图片_20240223155933.jpg"  alt="avatar" />
+        {localStorage.getItem("userUserName")}
+      </span>
+    </HeaderDropdown>
   );
 };
 

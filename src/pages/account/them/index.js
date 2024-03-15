@@ -11,7 +11,7 @@ import {
   Row,
   Select,
   Space,
-  Spin,
+  Spin, Switch,
   Table,
   Upload,
 } from 'antd';
@@ -51,6 +51,10 @@ const Center = () => {
 
   const [saveStartTmp,setSaveStartTmp]=useState(false)
   const [saveEndTmp,setSaveEndTmp]=useState(false)
+
+  const titleTmp="例如：把 '如何谈恋爱'? 这个标题润色一下,使得标题更加吸引人眼球，更加具体创新力，不超过14个字，要求标题带有双引号,不要带有冒号";
+
+  const themTmp="假如你是一个30岁单身的女性的，在广州上班，自身条件也不错，有身材有颜值，想找一个年龄比我大，阅历比我丰富的男性。如果有合适记得给我推荐。根据这个设定，以第一人称的口吻写一篇300字的短文，语言口语化，情感要真实 ，文章段落清晰，不要带有第一句。";
 
   const [statuOption]=useState([
     {
@@ -291,40 +295,51 @@ const Center = () => {
       title: '序号',
       dataIndex: 'id',
       key: 'id',
-      width:'10%'
+      width:'5%'
     },
+    // {
+    //   title: '账号',
+    //   dataIndex: 'uid',
+    //   key: 'uid',
+    //   width:'10%'
+    // },
+    // {
+    //   title: '设备编号',
+    //   dataIndex: 'deviceId',
+    //   key: 'deviceId',
+    //   width:'10%'
+    // },
     {
-      title: '账号',
-      dataIndex: 'uid',
-      key: 'uid',
-      width:'10%'
+      title: '标题模板',
+      dataIndex: 'articleTitleTemplate',
+      key: 'articleTitleTemplate',
+      width:'20%',
+      render: (text) => {
+        return (text===""  || text===null )?'未设置标题模板':<a style={{fontWeight:'bold'}}>{text}</a>
+      }
     },
-    {
-      title: '设备编号',
-      dataIndex: 'deviceId',
-      key: 'deviceId',
-      width:'10%'
-    },
+
     {
       title: '主题名',
       dataIndex: 'articleThem',
       key: 'articleThem',
       width:'20%'
     },
+
     {
       title: '篇数',
       dataIndex: 'articleNum',
       key: 'articleNum',
       width:'10%'
     },
-    {
-      title: '状态',
-      dataIndex: 'status',
-      key: 'status',
-      // eslint-disable-next-line no-nested-ternary
-      render: (text) => `${text === 0 ? '未发布' : text === 2 ? '已收藏' :'已成文'}`,
-      width:'10%'
-    },
+    // {
+    //   title: '状态',
+    //   dataIndex: 'status',
+    //   key: 'status',
+    //   // eslint-disable-next-line no-nested-ternary
+    //   render: (text) => `${text === 0 ? '未发布' : text === 2 ? '已收藏' :'已成文'}`,
+    //   width:'10%'
+    // },
     {
       title: '发布时间',
       dataIndex: 'articleSendTime',
@@ -347,14 +362,14 @@ const Center = () => {
       sorter: (a, b) => new Date(a.createTime) - new Date(b.createTime),
       width:'15%'
     },
-    {
-      title: '更新时间',
-      dataIndex: 'updateTime',
-      key: 'updateTime',
-      sorter: (a, b) => new Date(a.updateTime) - new Date(b.updateTime),
-      width:'15%'
-
-    },
+    // {
+    //   title: '更新时间',
+    //   dataIndex: 'updateTime',
+    //   key: 'updateTime',
+    //   sorter: (a, b) => new Date(a.updateTime) - new Date(b.updateTime),
+    //   width:'15%'
+    //
+    // },
     {
       title: '操作',
       fixed: 'right',
@@ -377,6 +392,10 @@ const Center = () => {
   const addThemModalClick=()=>{
        operationRef.current.data="新增"
        setIsModalOpen(true)
+       addThemform.setFieldsValue({
+         "status":"0",
+         "articleSendTime": moment().add(20,'minutes')
+       })
   }
   //  【 新增-按钮】
   const addTemplateModalClick=()=>{
@@ -473,6 +492,8 @@ const Center = () => {
     param.createTime=moment(param.articleSendTime).format('YYYY-MM-DD HH:mm:ss')
     param.updateTime=moment(param.articleSendTime).format('YYYY-MM-DD HH:mm:ss')
     param.articleSendTime=moment(param.articleSendTime).format('YYYY-MM-DD HH:mm:ss')
+    // eslint-disable-next-line no-use-before-define
+    param.articleTitleStatus=tmp?0:1
 
     if(operationRef.current.data==="新增"){
       saveThem(param).then(res => {
@@ -584,10 +605,8 @@ const onDelBath=()=>{
 
     const localUser=JSON.parse(localStorage.getItem("user"));
     const accountId=localUser.userAccount
-    //
     const tmpFormData=templateThemform.getFieldsValue();
     const startTmp=tmpFormData.startTemplateContent
-    //
     const startParam={}
           startParam.module="THEM_TP_START_MODULE"
           startParam.name= startTmp
@@ -630,25 +649,64 @@ const onDelBath=()=>{
   }
 
   const onDataAfterTmp=()=>{
-    templateThemform.setFieldsValue({
-       "articleSendTime":moment().add(30,'minutes')
+    const today = moment().startOf('day');
+    const time = moment(today).set({ hour: 14, minute: 0, second: 0 });
+    addThemform.setFieldsValue({
+       "articleSendTime":time
     })
   }
 
+  const onDataMoringTmp=()=>{
+    const today = moment().startOf('day');
+    const time = moment(today).set({ hour: 6, minute: 0, second: 0 });
+    addThemform.setFieldsValue({
+       "articleSendTime":time
+    })
+  }
   const onDataNgTmp=()=>{
-    templateThemform.setFieldsValue({
-       "articleSendTime":moment().add(20,'minutes')
+    const today = moment().startOf('day');
+    const time = moment(today).set({ hour: 19, minute: 0, second: 0 });
+    addThemform.setFieldsValue({
+      "articleSendTime":time
     })
   }
 
-  const onDataFooter=()=>{
+  const onDataTMTmp=()=>{
+  const tomorrow = moment().add(1, 'day').startOf('day');
+  const time = moment(tomorrow).set({ hour: 6, minute: 0, second: 0 });
+  addThemform.setFieldsValue({
+      "articleSendTime":time
+    })
+  }
+
+  const onDataTmAfTmp=()=>{
+    const tomorrow = moment().add(1, 'day').startOf('day');
+    const time = moment(tomorrow).set({ hour: 13, minute: 0, second: 0 });
+    addThemform.setFieldsValue({
+      "articleSendTime":time
+    })
+  }
+
+
+  const onDataTmNgTmp=()=>{
+    const tomorrow = moment().add(1, 'day').startOf('day');
+    const time = moment(tomorrow).set({ hour: 19, minute: 0, second: 0 });
+    addThemform.setFieldsValue({
+      "articleSendTime":time
+    })
+  }
+
+
+  const ondataFooter=()=>{
     return(
-      <>
-        <Space>
-          <Button  type="primary"  onClick={onDataAfterTmp}>上午</Button>
-          <Button  type="primary"  onClick={onDataNgTmp}>下午</Button>
+       <Space>
+          <Button  type="primary"  onClick={onDataMoringTmp} size="small">今天6点 </Button>
+          <Button  type="primary"  onClick={onDataAfterTmp} size="small"> 今天14点 </Button>
+          <Button  type="primary"  onClick={onDataNgTmp} size="small">    今天19点 </Button>
+          <Button  type="primary"  onClick={onDataTMTmp} size="small">   明天6点 </Button>
+          <Button  type="primary"  onClick={onDataTmAfTmp} size="small"> 明天14点 </Button>
+          <Button  type="primary"  onClick={onDataTmNgTmp} size="small"> 明天19点 </Button>
         </Space>
-      </>
     )
   }
 
@@ -681,18 +739,29 @@ const onDelBath=()=>{
   });
 }
 
+
+ // const [tmp,setTmp]=useState(false)
+  const [tmp,setTmp]=useState(true)
+  useEffect(()=>{
+    setTmp(tmp)
+  },[tmp])
+
+const switchChange =(value)=>{
+      setTmp(!value)
+}
+
   return (
     <GridContent>
       <Row gutter={24}>
           <Card bordered style={{ marginBottom: 24 , width:'100%',height: '80%' }} >
             <Space  style={{ marginBottom: 16}}>
               <Button    type= 'primary'  icon={<PlusOutlined />} onClick={addThemModalClick}>新增</Button>
-              <Button    type= 'primary'  icon={<PlusOutlined />} onClick={addTemplateModalClick}>模板新增</Button>
               <Button    icon={<CloudUploadOutlined />}  type= 'primary' onClick={importFileModalClick}   > 导入</Button>
               <Button    icon={<DeleteOutlined />}  type= 'primary'  danger  onClick={onDelBath} > 批量删除</Button>
               {/* eslint-disable-next-line jsx-a11y/label-has-associated-control */}
               <a> 设备编号:</a>
               <Select     defaultValue="all" style={{ width: 150 }}       options={deviceOption}    onChange={onOptionChange} id="deviceId" />
+              <Button    type= 'primary'  icon={<PlusOutlined />} onClick={addTemplateModalClick}>模板新增</Button>
               <Select     defaultValue="0"   style={{ width: 150 }}       options={statuOption}    onChange={onStatuOptionChange} />
               <Input      placeholder= "输入搜索的主题序号、内容..."  onChange={ (e)=>{inputChange(e.target.value)}} style={{width:250}}/>
               <Button     type= 'primary'  icon={<SearchOutlined  />} onClick={onSearch} >查询</Button>
@@ -739,6 +808,22 @@ const onDelBath=()=>{
             name="articleThem"
             rules={[{required: true}]}
           >
+            <TextArea   rows={4}  placeholder={themTmp} />
+          </Form.Item>
+          <Form.Item
+            label="生成标题"
+            name="articleTitleStatus"
+            rules={[{required: true}]}
+          >
+              <Switch  onChange={switchChange}  checkedChildren="是" unCheckedChildren="否" />
+          </Form.Item>
+             <a style={{marginLeft:'34%'}}  hidden={tmp}>{titleTmp}</a>
+          <Form.Item
+            label="生成标题模板"
+            name="articleTitleTemplate"
+            hidden={tmp}
+            rules={[{required:`${tmp}` }]}
+          >
             <TextArea   rows={4}  />
           </Form.Item>
           <Form.Item
@@ -754,7 +839,7 @@ const onDelBath=()=>{
             tooltip="开始发布的时间"
             rules={[{required: true}]}
           >
-              <DatePicker showTime   />
+              <DatePicker showTime  renderExtraFooter={ondataFooter}  />
           </Form.Item>
           <Form.Item
             label="选择设备编号"
@@ -829,9 +914,8 @@ const onDelBath=()=>{
             name="importArticleSendTime"
             tooltip="开始发布的时间"
             rules={[{required: true}]}
-
           >
-            <DatePicker showTime       style={{ width: 150 }}/>
+            <DatePicker showTime  style={{ width: 150 }}  />
           </Form.Item>
           <Form.Item
             label="输入设备编号"

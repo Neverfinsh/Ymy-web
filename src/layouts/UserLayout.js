@@ -44,11 +44,11 @@ const UserLayout = (props) => {
                   <div className={styles.h} />
                   <div className={styles.h} />
                 </div>
-                {/* <img alt="logo" className={styles.logo} src={logo} /> */}
+                {/* <img alt="logo" className={styles.logo} src="http://101.201.33.155/ymystatic/img/屏幕截图 2024-01-23 143412.png" /> */}
+
                 <span className={styles.title}>{formatMessage({ id: 'app.logo.name' })}</span>
               </Link>
             </div>
-            <div className={styles.desc}>前端脚手架</div>
           </div>
           {children}
         </div>

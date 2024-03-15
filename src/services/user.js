@@ -62,18 +62,18 @@ export async function listDictionaryItemByCode(params) {
  * @param params
  * @returns {Promise<void>}
  */
-export async function listUser(params) {
-  return request(`/users?${stringify(params)}`);
-}
+// export async function listUser(params) {
+//   return request(`/users?${stringify(params)}`);
+// }
 
 /**
  * 按条件查询站内信列表数据。
  * @param params
  * @returns {Promise<void>}
  */
-export async function pageMessage(params) {
-  return request(`/messages?${stringify(params)}`);
-}
+// export async function pageMessage(params) {
+//   return request(`/messages?${stringify(params)}`);
+// }
 
 /**
  * 添加站内信。

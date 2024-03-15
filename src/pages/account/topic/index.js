@@ -1,5 +1,19 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Button, Card, DatePicker, Form, Input, Modal, notification, Row, Select, Space, Spin, Table } from 'antd';
+import {
+  Breadcrumb,
+  Button,
+  Card,
+  DatePicker,
+  Form,
+  Input,
+  Modal,
+  notification,
+  Row,
+  Select,
+  Space,
+  Spin,
+  Table,
+} from 'antd';
 import { connect, history } from 'umi';
 import { GridContent } from '@ant-design/pro-layout';
 import { DeleteOutlined, PlusOutlined, ReloadOutlined, SearchOutlined } from '@ant-design/icons';
@@ -461,6 +475,9 @@ const onDelBath=()=>{
 
   return (
     <GridContent>
+      <Breadcrumb style={{marginBottom:20}}>
+        <Breadcrumb.Item> <a>/话题列表</a></Breadcrumb.Item>
+      </Breadcrumb>
       <Row gutter={24}>
           <Card bordered style={{ marginBottom: 24 , width:'100%',height: '80%' }} >
             <Space  style={{ marginBottom: 16}}>
@@ -518,6 +535,13 @@ const onDelBath=()=>{
           </Form.Item>
           <Form.Item
             label="选择设备编号"
+            name="deviceId"
+            rules={[{required: true}]}
+          >
+            <Select options={deviceOption}  />
+          </Form.Item>
+          <Form.Item
+            label="选择模板"
             name="deviceId"
             rules={[{required: true}]}
           >

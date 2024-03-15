@@ -1,8 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Button, Card, Form, Modal, notification, Row, Select, Space, Spin, Table } from 'antd';
+import { Breadcrumb, Button, Card, Form, Modal, notification, Row, Select, Space, Spin, Table } from 'antd';
 import { connect, history } from 'umi';
 import { GridContent } from '@ant-design/pro-layout';
-import { DeleteOutlined, ReloadOutlined, SettingOutlined } from '@ant-design/icons';
+import { DeleteOutlined, PlusOutlined, ReloadOutlined, SettingOutlined } from '@ant-design/icons';
 import useForm from 'antd/lib/form/hooks/useForm';
 import moment from 'moment';
 import axios from 'axios';
@@ -282,6 +282,7 @@ const Center = () => {
       render: (record) => [
         <Space key="TopicOpera">
           <a   onClick={()=>{updateTopic(record)}}>编辑</a>
+          <a   onClick={()=>{updateTopic(record)}}>转换成主题</a>
         </Space>
 
       ],
@@ -472,9 +473,17 @@ const onDelBath=()=>{
 
   return (
     <GridContent>
+      <Breadcrumb style={{marginBottom:20}}>
+        <Breadcrumb.Item> <a onClick={()=>{history.push("../topic")}}>话题列表</a></Breadcrumb.Item>
+        <Breadcrumb.Item>
+          <a href="">话题详情</a>
+        </Breadcrumb.Item>
+      </Breadcrumb>
+
       <Row gutter={24}>
           <Card bordered style={{ marginBottom: 24 , width:'100%',height: '80%' }} >
             <Space  style={{ marginBottom: 16}}>
+              <Button    type= 'primary'  icon={<PlusOutlined />} onClick={onDelBath}>批量转换主题</Button>
               <Button    icon={<DeleteOutlined />}  type= 'primary'  danger  onClick={onDelBath} > 批量删除</Button>
               <Button     type= 'primary'  icon={<SettingOutlined /> } onClick={onRefresh} >配置模板</Button>
               <Button     type= 'primary'  icon={<ReloadOutlined />} onClick={onRefresh} >刷新</Button>
