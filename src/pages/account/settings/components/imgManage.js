@@ -206,7 +206,8 @@ const imgManage = () => {
   }
 
   const onRemove=(file)=>{
-    axios.delete(`http://localhost:8099/image/web/delImg/${file.uid}`, {
+ //   axios.delete(`http://localhost:8099/image/web/delImg/${file.uid}`, {
+    axios.delete(`http://101.201.33.155:8099/image/web/delImg/${file.uid}`, {
       headers: {'Content-Type': 'application/json'},
     }).then((response) => {
       console.log(response)

@@ -129,6 +129,11 @@ const DataCenter = () => {
       render:(text,record,index)=>`${index+1}`,
     },
     {
+      title: '日期时间',
+      dataIndex: 'devicedId',
+      key: 'devicedId',
+    },
+    {
       title: '账号',
       dataIndex: 'uid',
       key: 'userId',
@@ -138,6 +143,7 @@ const DataCenter = () => {
       dataIndex: 'devicedId',
       key: 'devicedId',
     },
+
 
     {
       title: '主题数量',
@@ -271,9 +277,9 @@ const DataCenter = () => {
             <a style={{color:'black'}}> 查询周期:</a>
             <Select    defaultValue="today"  style={{ width: 150 }}   options={dataOption}  onChange={onDataChange}  />
             <a style={{color:'black'}}>开始日期:</a>
-            <DatePicker  showTime    style={{ width: 150 }} />
+            <DatePicker      style={{ width: 150 }} />
             <a style={{color:'black'}}>结束日期:</a>
-            <DatePicker  showTime    style={{ width: 150 }} />
+            <DatePicker      style={{ width: 150 }} />
             <Button    type= 'primary'  icon={<SearchOutlined/>} onClick={onSearch} >查询</Button>
           </Space>
           <Spin spinning={ empt}>

@@ -1,8 +1,10 @@
-import { Badge, Button, Calendar, Select, Space } from 'antd';
-import React, { useEffect } from 'react';
+import { Badge, Button, Calendar, Modal, Select, Space } from 'antd';
+import React, { useEffect, useState } from 'react';
 import moment from 'moment';
-import { findDataRecordList } from '@/services/data';
+import { PlusOutlined } from '@ant-design/icons';
+import { useForm } from 'antd/es/form/Form';
 import { openNotification } from '@/utils/utils';
+import { findDataRecordList } from '@/services/data';
 
 
 const App = () => {
@@ -59,7 +61,6 @@ const App = () => {
       }).catch((error) => {
         openNotification('error',`查询数据统计过列表失败！,原因:${error}`)
       });
-      console.log('----myMap----' ,myMap);
     }
 
 
@@ -70,6 +71,15 @@ const App = () => {
     initCalendarData();
   }, []);
 
+
+  const onDateSelect=(value)=>{
+    const seletcData=moment(value).format('YYYY-MM-DD')
+    console.log('select Date' ,moment(value).format('YYYY-MM-DD HH:mm:ss'));
+    // eslint-disable-next-line no-use-before-define
+    setIsModalOpen(true);
+    // eslint-disable-next-line no-use-before-define
+    setSelectDate(seletcData)
+  }
 
   const getListData = (value) => {
     // console.log('----getListData----', moment(value).format('YYYY-MM-DD HH:mm:ss'));
@@ -140,7 +150,9 @@ const App = () => {
     ) : null;
   };
 
+
   const dateCellRender = (value) => {
+    console.log('111111' ,);
     const listData = getListData(value);
     return (
       <ul className='events'>
@@ -152,20 +164,58 @@ const App = () => {
       </ul>
     );
   };
-  return (<>
-    <Space>
-      <Button type='primary'>新增</Button>
-      <a style={{ color: 'black' }}>选择设备:</a>
-      <Select style={{ width: 170 }}>
-        <Select.Option value='Linwu001'>Linwu001</Select.Option>
-        <Select.Option value='Linwu001'>Linwu001</Select.Option>
-        <Select.Option value='Linwu001'>Linwu001</Select.Option>
-      </Select>
-      <Button type='primary'>新增</Button>
-    </Space>
-    <Calendar dateCellRender={dateCellRender} monthCellRender={monthCellRender} style={{ marginTop: 40 }}
-    />;
-  </>);
+
+  const [cellItem,setCellItem]=useState({
+        dataValue:null,
+        contentValue:null,
+  })
+  const [taskForm]=useForm();
+  const [isModalOpen,setIsModalOpen]=useState(false);
+  const [selectdDate,setSelectDate]=useState(null);
+  const [selectContent,setSelectContent]=useState(null);
+
+  const onModalOk=()=>{}
+   return <>
+            <Space>
+              <Button    type= 'primary'  icon={<PlusOutlined />} >新增</Button>
+              <a style={{ color: 'black' }}>选择设备:</a>
+              <Select style={{ width: 170 }}>
+                <Select.Option value='Linwu001'>Linwu001</Select.Option>
+                <Select.Option value='Linwu001'>Linwu001</Select.Option>
+                <Select.Option value='Linwu001'>Linwu001</Select.Option>
+              </Select>
+              <Button type='primary'>查询</Button>
+            </Space>
+
+            <Calendar
+                dateCellRender={dateCellRender}
+                monthCellRender={monthCellRender}
+               style={{ marginTop: 20 }}
+               onSelect={onDateSelect}
+            />
+            {/**/}
+    <Modal
+      title={`${selectdDate}查看具体的任务详情`}
+      open={isModalOpen}
+      onOk={onModalOk}
+      onCancel={()=>{  setIsModalOpen(false)}}
+      width='50%'
+      style={{height:'500px'}}
+      destroyOnClose
+    >
+      {/* <Form */}
+      {/*  form={taskForm} */}
+      {/*  name="basic" */}
+      {/*  labelCol={{ span: 4 }} */}
+      {/*  wrapperCol={{ span: 16 }} */}
+      {/*  autoComplete="off" */}
+      {/* > */}
+
+      {/* </Form> */}
+    </Modal>
+
+
+  </>;
 };
 
 export default App;

@@ -23,7 +23,7 @@ import {
   ReloadOutlined,
   SearchOutlined,
   TeamOutlined,
-  WarningOutlined,
+  WarningOutlined, WindowsOutlined,
 } from '@ant-design/icons';
 import useForm from 'antd/lib/form/hooks/useForm';
 import moment from 'moment';
@@ -39,6 +39,7 @@ const Article = () => {
   const[articleModalForm] = useForm();
   const[shortArticleModalForm] = useForm();
   const[originalArticleModalForm] = useForm();
+  const[bashPbForm] = useForm();
 
   const[isModalOpen,setIsModalOpen]=useState(false);
   const[shortModalOpen,setShotModalOpen]=useState(false);
@@ -65,119 +66,10 @@ const Article = () => {
   const [deviceOption,setDeviceOption]=useState([]);
   const [drawTableData,setDrawTableData]=useState([]);
 
+  // 批量发布选择的日期
+  const [dataSelect,setDataSelect]=useState(moment().format("YYYY-MM-DD"));
 
-
-
-  const  initDviceOption =()=>{
-    const  accountStr=localStorage.getItem("user")
-    const  accountObj=JSON.parse(accountStr);
-    const  {userAccount} = accountObj
-
-    const  options=[]
-    findDeviceList(userAccount).then(res=>{
-      if(res.code===0){
-        const   deviceNames=[]
-        const   deviceList=res.res
-        for(let i=0;i<deviceList.length; i += 1){
-          deviceNames.push(deviceList[i].dviceName)
-          const obj={}
-          obj.value=deviceList[i].dviceName
-          obj.label=deviceList[i].dviceName
-          options.push(obj)
-        }
-        setDeviceOption(options);
-      }
-    }).catch((error)=>{
-      openNotification('error',`获取设备编号失败!原因:${error}`,3)
-    });
-  }
-
-
-  useEffect(()=>{
-    setDeviceOption(deviceOption)
-  },[deviceOption])
-
-
-
-  const initList=()=>{
-    tableLoadRef.current.flag=true
-    const userStr=localStorage.getItem("user");
-    const user=JSON.parse(userStr);
-
-    const devicesStr=localStorage.getItem("devices");
-    const devices = JSON.parse(devicesStr);
-
-    let  defaultDeviceId=devices[0]
-    if(!isEmpty(optionValue)){
-         defaultDeviceId=optionValue
-    }
-    console.log('--iniList---默认' ,defaultDeviceId);
-    if(user === undefined){
-      history.push('/user/login');
-      return ;
-    }
-    const  param={}
-          param.userId=user.userAccount
-          param.deviceId=defaultDeviceId
-    findArticleList(param).then(res => {
-      const list=res.res
-      // eslint-disable-next-line no-restricted-syntax,no-plusplus
-      setArticleDataSource(list);
-      setTotals(list.length)
-      // eslint-disable-next-line no-use-before-define
-          const len=checkExpired(list)
-                 setTotalsExpired(len);
-    }).catch((error) => {
-      openNotification('error',`查询列表失败！,原因:${error}`)
-    });
-    tableLoadRef.current.flag=false
-  }
-
-  const checkExpired=(list)=>{
-    const nowTime=moment()
-        const arr=[]
-        for(let i=0;i<list.length;i += 1){
-            const sendTime=moment(list[i].articleSendTime)
-            if(!nowTime.isBefore(sendTime)){
-               arr.push(list[i])
-            }
-        }
-    console.log('arr' ,arr.length);
-    console.log('list' ,list);
-    return arr.length;
-  }
-
-
-  // 【获取当前用户信息】
-  useEffect(() => {
-    const loginUser =localStorage.getItem("user")
-    if(loginUser === null){
-       history.push("../../user/login")
-    }
-  }, []);
-
-
-  useEffect(() => {
-    initList()
-    initDviceOption()
-  }, []);
-
-
-
-  const confirmDel=(record)=>{
-    const articleId=record.id
-    delArticle(articleId).then(res => {
-      if(res.code === 0){
-          openNotification('success','删除成功')
-          initList();
-      }
-
-    }).catch((error) => {
-      openNotification('error',`删除失败，原因:${error}`)
-
-    });
-  }
-
+  const[bathPublishModalOpen,setBathPublishModalOpen]=useState(false);
 
   const imgColums=[
     {
@@ -190,12 +82,10 @@ const Article = () => {
       dataIndex: 'picPath',
       key: 'picPath',
       render:(text)=>{
-          return  <Image width={200}  src={text} />
+        return  <Image width={200}  src={text} />
       }
     }
   ]
-
-
 
   const columns=[
     {
@@ -274,12 +164,12 @@ const Article = () => {
       key: 'articleSendTime',
       sorter: (a, b) => new Date(a.articleSendTime) - new Date(b.articleSendTime),
       render: (text) => {
-            const sendTime=moment(text)
-            const nowTime=moment()
-            if(nowTime.isBefore(sendTime)){ // now 在 发送之之前。有问题
-               return <a  style={{ color:'#151514'}}>{text}</a>
-            }
-              return  <Space> <WarningOutlined />  <a  style={{ color:'#F1D40D'}}>{text}</a> </Space>
+        const sendTime=moment(text)
+        const nowTime=moment()
+        if(nowTime.isBefore(sendTime)){ // now 在 发送之之前。有问题
+          return <a  style={{ color:'#151514'}}>{text}</a>
+        }
+        return  <Space> <WarningOutlined />  <a  style={{ color:'#F1D40D'}}>{text}</a> </Space>
       },
       defaultSortOrder : ['descend'],
     },
@@ -311,9 +201,6 @@ const Article = () => {
       // eslint-disable-next-line no-unused-vars
       render: (_, record) => [
         <Space key="opt">
-          {/* eslint-disable-next-line no-use-before-define */}
-          {/* <a  onClick={()=>{detailArticle(record)}}>详情</a> */}
-          {/* eslint-disable-next-line no-use-before-define */}
           <a  onClick={()=>updateArticle(record)}>编辑</a>
           <Popconfirm
             title="是否删除文章"
@@ -322,10 +209,8 @@ const Article = () => {
             okText="Yes"
             cancelText="No"
           >
-             <a >删除</a>
+            <a >删除</a>
           </Popconfirm>
-
-          {/* eslint-disable-next-line no-use-before-define */}
           <a  onClick={()=>publishArticle(record)}>立即发布</a>
         </Space>
 
@@ -334,7 +219,131 @@ const Article = () => {
   ];
 
 
+  useEffect(()=>{setSelectedDrawRowKeys(selectedDrawRowKeys)},[selectedDrawRowKeys])
+
+  useEffect(()=>{setSelectedDrawRows(selectedDrawRows)},[selectedDrawRows])
+
+
+  // 【获取当前用户信息】
+  useEffect(() => {
+    const loginUser =localStorage.getItem("user")
+    if(loginUser === null){
+      history.push("../../user/login")
+    }
+  }, []);
+
+
+  useEffect(()=>{
+    setDeviceOption(deviceOption)
+  },[deviceOption])
+
+
+
+  useEffect(() => {
+    initList()
+    initDviceOption()
+  }, []);
+
+
+  const  initDviceOption =()=>{
+    const  accountStr=localStorage.getItem("user")
+    const  accountObj=JSON.parse(accountStr);
+    const  {userAccount} = accountObj
+
+    const  options=[]
+    findDeviceList(userAccount).then(res=>{
+      if(res.code===0){
+        const   deviceNames=[]
+        const   deviceList=res.res
+        for(let i=0;i<deviceList.length; i += 1){
+          deviceNames.push(deviceList[i].dviceName)
+          const obj={}
+          obj.value=deviceList[i].dviceName
+          obj.label=deviceList[i].dviceName
+          options.push(obj)
+        }
+        setDeviceOption(options);
+      }
+    }).catch((error)=>{
+      openNotification('error',`获取设备编号失败!原因:${error}`,3)
+    });
+  }
+
+
+  const initList=()=>{
+
+    tableLoadRef.current.flag=true
+    const userStr=localStorage.getItem("user");
+    const user=JSON.parse(userStr);
+
+    const devicesStr=localStorage.getItem("devices");
+    const devices = JSON.parse(devicesStr);
+
+    let  defaultDeviceId=devices[0]
+    if(!isEmpty(optionValue)){
+         defaultDeviceId=optionValue
+    }
+    if(user === undefined){
+      history.push('/user/login');
+      return ;
+    }
+    const  param={}
+          param.userId=user.userAccount
+          param.deviceId=defaultDeviceId
+
+    const seletedDataArr=[]
+    findArticleList(param).then(res => {
+      const list=res.res
+      const data1 = moment(dataSelect,'YYYY-MM-DD');
+      for(const item of list){
+        const  {articleSendTime}=item
+        const  data2= moment(articleSendTime,'YYYY-MM-DD');
+        if(data2.isSame(data1)){
+          seletedDataArr.push(item)
+        }
+      }
+      setArticleDataSource(seletedDataArr);
+      setTotals(seletedDataArr.length)
+      const len=checkExpired(list)
+      setTotalsExpired(len);
+    }).catch((error) => {
+      openNotification('error',`查询列表失败！,原因:${error}`)
+    });
+    tableLoadRef.current.flag=false
+  }
+
+  const checkExpired=(list)=>{
+    const nowTime=moment()
+        const arr=[]
+        for(let i=0;i<list.length;i += 1){
+            const sendTime=moment(list[i].articleSendTime)
+            if(!nowTime.isBefore(sendTime)){
+               arr.push(list[i])
+            }
+        }
+    return arr.length;
+  }
+
+
+  const confirmDel=(record)=>{
+    const articleId=record.id
+    delArticle(articleId).then(res => {
+      if(res.code === 0){
+          openNotification('success','删除成功')
+          initList();
+      }
+
+    }).catch((error) => {
+      openNotification('error',`删除失败，原因:${error}`)
+
+    });
+  }
+
+
+
+
   const bindImgDatasPic=()=>{
+
     const param= articleModalForm.getFieldsValue();
     const articleId=param.id
     let  records=[]
@@ -348,14 +357,14 @@ const Article = () => {
          //   axios.post('http://localhost:8099/image/web/addRelImg', relParam, {
               headers: {'Content-Type': 'application/json'},
             }).then((response) => {
-              console.log('response' ,response);
-              setOpenDrawer(false)
               setSelectedDrawRowKeys([])
               setSelectedDrawRows([])
+
+              setOpenDrawer(false)
             })
     }
-    //
-    // eslint-disable-next-line no-use-before-define
+    setSelectedDrawRowKeys([])
+    setSelectedDrawRows([])
     refreshImg()
   }
 
@@ -388,31 +397,17 @@ const Article = () => {
   }
 
 
-  const  detailArticle=(record)=>{
-            operationRef.current.data="详情"
-           setIsModalOpen(true)
-           articleModalForm.setFieldsValue({
-             'articleThem': record.articleThem,
-             'articleTitle': record.articleTitle,
-             'articleContent': record.articleContent,
-             'articleNum':  Number(record.articleNum),
-             'articleSendTime': moment(record.articleSendTime),
-             'userId': record.uid,
-             'articleChannel': record.articleChannel,
-        });
-  }
-
-
 
   const handleChange = ({ fileList: newFileList }) => {
         setArticleImgList(newFileList)
   };
 
+
   const onRemoveImgRel=(file)=>{
-    axios.delete(`http://localhost:8099/image/web/delRelImg/${file.uid}`, {
+    axios.delete(`http://101.201.33.155:8099/image/web/delRelImg/${file.uid}`, {
+   // axios.delete(`http://localhost:8099/image/web/delRelImg/${file.uid}`, {
       headers: {'Content-Type': 'application/json'},
     }).then((response) => {
-      console.log(response)
     })
   }
 
@@ -434,7 +429,6 @@ const Article = () => {
       }).catch((error) => {
         openNotification('error',`查询图片ID列表失败！,原因:${error}`)
       });
-    //
     operationRef.current.data="编辑"
     setIsModalOpen(true)
     articleModalForm.setFieldsValue({
@@ -453,7 +447,6 @@ const Article = () => {
 
 
   const  publishArticle=(record)=>{
-    //  【更新状态】 和  【修改发送时间为今天的时间】
     const param= record;
           param.articleSendTime=moment().add(1,'minutes').format('YYYY-MM-DD HH:mm:ss')
 
@@ -481,6 +474,7 @@ const Article = () => {
 
 
   const onModalOk=()=>{
+
       setIsModalOpen(false)
       const param= articleModalForm.getFieldsValue();
 
@@ -494,7 +488,6 @@ const Article = () => {
       param.uid=userAccount
 
       // 【  新增方法 】
-    console.log('新增' ,operationRef.current.data);
         if(operationRef.current.data ==="新增"){
           adddArticle(param).then(res => {
           if(res.code === 0){
@@ -517,7 +510,6 @@ const Article = () => {
             });
           setTableLoading(false)
       }
-       // eslint-disable-next-line no-use-before-define
         refreshArtiList()
   }
 
@@ -525,7 +517,6 @@ const Article = () => {
   const onShortModalOk=()=>{
 
     const param= articleModalForm.getFieldsValue();
-
     param.status=0
     param.createTime=moment(param.articleSendTime).format('YYYY-MM-DD HH:mm:ss')
     param.articleSendTime=moment(param.articleSendTime).format('YYYY-MM-DD HH:mm:ss')
@@ -534,9 +525,7 @@ const Article = () => {
     const  accountObj=JSON.parse(accountStr);
     const  {userAccount} = accountObj
     param.uid=userAccount
-
     // 【  新增方法 】
-    console.log('新增' ,operationRef.current.data);
     if(operationRef.current.data ==="新增"){
       adddArticle(param).then(res => {
         if(res.code === 0){
@@ -548,7 +537,6 @@ const Article = () => {
         openNotification('error',`新增一篇文章失败,失败原因:${error}`)
       });
     }
-    // eslint-disable-next-line no-use-before-define
     refreshArtiList()
   }
 
@@ -574,7 +562,6 @@ const Article = () => {
         openNotification('error',`新增一篇文章失败,失败原因:${error}`)
       });
     setOrignalModalOpen(false)
-    // eslint-disable-next-line no-use-before-define
     refreshArtiList()
   }
 
@@ -590,60 +577,77 @@ const Article = () => {
   const shuffleArray=(array)=> {
     for (let i = array.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
-      // eslint-disable-next-line no-param-reassign
       [array[i], array[j]] = [array[j], array[i]];
     }
     return  array;
   }
 
+
+  const bathModalOk = () => {
+
+    const params = bashPbForm.getFieldsValue();
+    const { bathPbDate, bathPbInterval } = params;
+    let count = 1;
+    const newOrderselectedRows = shuffleArray(selectedRows);
+    for (const param of newOrderselectedRows) {
+      const futureTime = moment(bathPbDate).add(Number(bathPbInterval) * Number(count), 'minutes');
+      const newArticleSendTime = futureTime.format('YYYY-MM-DD HH:mm:ss');
+      param.articleSendTime = newArticleSendTime;
+      param.updateTime = newArticleSendTime;
+
+      updateArticleImpl(param).then(res => {
+        if (res.code === 0) {
+            openNotification('success', `修改文章标题 【${param.id}】发布时间成功`);
+        }
+        initList();
+        setSelectedRows([]);
+        setSelectedRowKeys([]);
+
+      }).catch((error) => {
+           openNotification('error', `修改文章标题 【 ${param.id}】 发布时间失败,失败原因:${error}`);
+      });
+      count++;
+    }
+    setBathPublishModalOpen(false)
+  };
+
   // 【 批量发布】
   const onPublicshBath=()=>{
-    let count=1
-    // eslint-disable-next-line no-restricted-syntax
-    // todo：  需要测试
-    const newOrderselectedRows=shuffleArray(selectedRows)
-    // eslint-disable-next-line no-restricted-syntax
-  //  const  newData=selectedRows[0].articleSendTime
-    const  newData= moment()
-    console.log('--newData--' ,moment(newData));
-    for (const param of newOrderselectedRows) {
-          const now1 = newData
-         // 生成1-20内的随机整数
-          const randomNumber = Math.floor(Math.random() * 20) + 1;
-          console.log(" 批量发布:生成1-20内的随机整数:",randomNumber);
-          const futureTime = now1.add(10+Number(count), 'minutes');
-          const newArticleSendTime=futureTime.format('YYYY-MM-DD HH:mm:ss')
-          console.log('articleSendTime' ,newArticleSendTime);
-          param.articleSendTime=newArticleSendTime
-          param.updateTime=moment().format('YYYY-MM-DD HH:mm:ss')
 
-          updateArticleImpl(param).then(res => {
-            if(res.code === 0){
-               openNotification('success',`修改文章标题 【${param.id}】发布时间成功`)
-            }
-            initList()
-            setSelectedRows([])
-            setSelectedRowKeys([])
-          }).catch((error) => {
-              openNotification('error',`修改文章标题 【 ${param.id}】 发布时间失败,失败原因:${error}`)
-          });
-      // eslint-disable-next-line no-plusplus
-         count++;
+    if(dataSelect === ""){
+      openNotification('warn',`请选择批量发布的日期,然后点击查询`)
+      document.getElementById('dataPickerId').focus();
+      return;
     }
+    if(articleDataSource.length === 0){
+      openNotification('warn',`当前日期没有需要批量发布的文章`)
+      return;
+    }
+    if(selectedRows.length === 0){
+      openNotification('warn',`请先勾选批量发布的文章,然后点击查询`)
+      return;
+    }
+
+    bashPbForm.setFieldsValue({
+      "bathPbInterval": 10,
+      "bathPbDate": moment().add(5,'minutes')
+
+    })
+    setBathPublishModalOpen(true)
   }
 
 
-  // eslint-disable-next-line no-shadow
   const onTableSelectChange = (selectedRowKeys, selectedRows) => {
     setSelectedRowKeys(selectedRowKeys)
     setSelectedRows(selectedRows)
   }
 
   const onDrawTableSelectChange = (selectedDrawRowKeys, selectedDrawRows) => {
+    // console.log('selectedDrawRowKeys' ,selectedDrawRowKeys);
+    // console.log('selectedDrawRows' ,selectedDrawRows);
         setSelectedDrawRowKeys(selectedDrawRowKeys)
         setSelectedDrawRows(selectedDrawRows)
   }
-
 
 
   const onOptionChange=(value)=>{
@@ -654,7 +658,8 @@ const Article = () => {
     setOptionValue(optionValue)
   },[optionValue])
 
-const onSearch=()=>{
+
+  const onSearchAll=()=>{
     setTableLoading(true)
     const userStr=localStorage.getItem("user");
     const user=JSON.parse(userStr);
@@ -668,27 +673,45 @@ const onSearch=()=>{
     }).catch((error) => {
       openNotification('error',`查询列表失败！,原因:${error}`)
     });
+    setTimeout(()=>{
+      setTableLoading(false)
+    },2000)
+  }
+
+const onSearch=()=>{
+
+    setTableLoading(true)
+    const userStr=localStorage.getItem("user");
+    const user=JSON.parse(userStr);
+    const  param={}
+    param.userId=user.userAccount
+    param.deviceId= optionValue
+    const seletedDataArr=[]
+      findArticleList(param).then(res => {
+      const list=res.res
+      const data1 = moment(dataSelect,'YYYY-MM-DD');
+      for(const item of list){
+          const  {articleSendTime}=item
+          const  data2= moment(articleSendTime,'YYYY-MM-DD');
+          if(data2.isSame(data1)){
+              seletedDataArr.push(item)
+          }
+       }
+      setArticleDataSource(seletedDataArr);
+      setTotals(seletedDataArr.length)
+    }).catch((error) => {
+      openNotification('error',`查询列表失败！,原因:${error}`)
+    });
    setTimeout(()=>{
     setTableLoading(false)
   },2000)
 }
 
-const onInputChange=(e)=>{
-    const inputContent=e.target.value
-    const newDataSource=[]
-    for (let i = 0; i < articleDataSource.length;  i += 1) {
-      if(articleDataSource[i].id.toString().indexOf(inputContent)>-1){
-         newDataSource.push(articleDataSource[i])
-      }
-      if(articleDataSource[i].articleThem.toString().indexOf(inputContent)>-1){
-         newDataSource.push(articleDataSource[i])
-      }
-    }
-   setArticleDataSource(newDataSource)
-}
+
+
 
   const upLoadImgRel = (options) => {
-    // 上传图片风格
+
     const {file, onSuccess, onError} = options;
     const param= articleModalForm.getFieldsValue();
     const {deviceId,id} = param
@@ -709,11 +732,9 @@ const onInputChange=(e)=>{
     axios.post('http://101.201.33.155:8099/image/web/uploadImgRel', formData, {
       headers: {'Content-Type': 'multipart/form-data'},
     }).then((response) => {
-      console.log(response)
       onSuccess('上传成功');
     })
       .catch((error) => {
-        console.error('文件上传失败', error);
         onError('上传失败');
       });
   };
@@ -723,9 +744,7 @@ const onInputChange=(e)=>{
   // 【 执行上传 】
   const shortArticleHandleUpload = (options) => {
     const upLoadForm= shortArticleModalForm.getFieldsValue();
-    //  todo 验证
     const localUser=JSON.parse(localStorage.getItem("user"));
-    //  判断先填写form的选项
     const {file, onSuccess, onError} = options;
     const formData = new FormData();
     formData.append('file',  file);
@@ -738,7 +757,6 @@ const onInputChange=(e)=>{
      axios.post('http://101.201.33.155:8099/article/web/import/shortArticle/file', formData, {
     // axios.post('http://localhost:8099/article/web/import/shortArticle/file', formData, {
       headers: {'Content-Type': 'multipart/form-data'}
-      // eslint-disable-next-line no-unused-vars
     }).then((res) => {
       onSuccess(
         openNotification("success",`导入主题成功`,3.5)
@@ -753,9 +771,7 @@ const onInputChange=(e)=>{
   // 【 执行上传 】
   const originalArticleHandleUpload = (options) => {
     const upLoadForm= originalArticleModalForm.getFieldsValue();
-    //  todo 验证
     const localUser=JSON.parse(localStorage.getItem("user"));
-    //  判断先填写form的选项
     const {file, onSuccess, onError} = options;
     const formData = new FormData();
     formData.append('file',  file);
@@ -764,11 +780,9 @@ const onInputChange=(e)=>{
     formData.append('articleSendTime',  moment(upLoadForm.articleSendTime).format('YYYY-MM-DD HH:mm:ss'));
     formData.append('articleNum',  upLoadForm.articleNum);
     formData.append('channel',  upLoadForm.articleChannel);
-    //
      axios.post('http://101.201.33.155:8099/article/web/import/originalArticle/file', formData, {
     // axios.post('http://localhost:8099/article/web/import/originalArticle/file', formData, {
       headers: {'Content-Type': 'multipart/form-data'}
-      // eslint-disable-next-line no-unused-vars
     }).then((res) => {
       onSuccess(
         openNotification("success",`导入主题成功`,3.5)
@@ -804,6 +818,10 @@ const onInputChange=(e)=>{
 
   //  打开图片
   const imgDataBase = () => {
+
+    setSelectedDrawRowKeys([])
+    setSelectedDrawRows([])
+
     const formParam= articleModalForm.getFieldsValue()
     const {deviceId} = formParam
     if (deviceId === null) {
@@ -821,7 +839,6 @@ const onInputChange=(e)=>{
     axios.post('http://101.201.33.155:8099/image/web/imageList', param, { headers: { 'Content-Type': 'application/json' } })
       .then((response) => {
         const { data: { res } } = response;
-        console.log('####  res  ######' ,res);
         const fileListArr = [];
         for (let i = 0; i < res.length; i += 1) {
           const fileItem = {};
@@ -832,34 +849,72 @@ const onInputChange=(e)=>{
         setDrawTableData(fileListArr);
       })
       .catch((error) => {
-        console.error('文件上传失败', error);
       });
   };
 
+
+  const  onDateChange=(date, dateString)=>{
+     setDataSelect(dateString)
+  }
+
+
+
+ const  ondataFooterClick=(flag)=>{
+   const tomorrow = moment().add(1, 'day').startOf('day');
+   let time;
+   switch (flag) {
+     case 6:
+        time = moment(tomorrow).set({ hour: 6, minute: 0, second: 0 });
+        break;
+     case 14:
+        time = moment(tomorrow).set({ hour: 14, minute: 0, second: 0 });
+       break;
+     default:
+        time = moment(tomorrow).set({ hour: 17, minute: 0, second: 0 });
+   }
+   bashPbForm.setFieldsValue({
+     "bathPbDate":time
+   })
+ }
+
+
+  const ondataFooter=()=>{
+    return(
+      <Space>
+        <Button  type="primary"  onClick={()=>{ondataFooterClick(6)}} size="small">    明天6点 </Button>
+        <Button  type="primary"  onClick={()=>{ondataFooterClick(14)}} size="small">  明天14点 </Button>
+        <Button  type="primary"  onClick={()=>{ondataFooterClick(19)}} size="small">  明天19点 </Button>
+      </Space>
+    )
+  }
+
+
+   const cancelDrawer=()=>{
+     setOpenDrawer(false)
+   }
 
   return (
     <GridContent>
       <Row gutter={24}>
           <Card bordered style={{ marginBottom: 24 , width:'100%',height: '80%' }} >
             <Space  style={{ marginBottom: 16}}>
-              {/* eslint-disable-next-line react/jsx-no-undef */}
               <Button    type= 'primary'  icon={<PlusOutlined />} onClick={addThemModalClick}>新增</Button>
-              {/* <Button    type= 'primary'  icon={<PlusOutlined />} onClick={addShortModalClick}>批量导入文章</Button> */}
               <Button    type= 'primary'  icon={<PlusOutlined />} onClick={addShortModalClick}>批量导入短文/换行</Button>
               <Button    type= 'primary'  icon={<PlusOutlined />} onClick={addOriginalModalClick}>批量导入原文</Button>
-              <Button    type= 'primary'  icon={<TeamOutlined />} onClick={onPublicshBath} >批量发布</Button>
-              {/* eslint-disable-next-line jsx-a11y/label-has-associated-control */}
               <label>设备编号:</label>
               <Select
                 style={{ width: 150 }}
                 options={deviceOption}
                 onChange={onOptionChange}
               />
-              <Input placeholder= "输入搜索的内容、序号、主题..."  onChange={onInputChange} style={{width:250}} />
+              <label>日期:</label>
+              <DatePicker  onChange={onDateChange}  id="dataPickerId"  value={moment(dataSelect)} />
               <Button    type= 'primary'  icon={<SearchOutlined/>} onClick={onSearch} >查询</Button>
-              <Button   type= 'primary'   icon={<ReloadOutlined />}  onClick={refreshArtiList}>刷新</Button>
+              <Button    type= 'primary'  icon={<WindowsOutlined />} onClick={onSearchAll} >查询全部</Button>
+              <Button    type= 'primary'  icon={<TeamOutlined />} onClick={onPublicshBath} >批量发布</Button>
+              <Button     type= 'primary'   icon={<ReloadOutlined />}  onClick={refreshArtiList}>刷新</Button>
               <a>待发布总计: {totals} 篇  </a>
-              <a style={{ color:'#F1D40D'}} >过期: {totalsExpired} 篇 </a>
+              <a style={{ color:'#e84242'}} >过期: {totalsExpired} 篇 </a>
 
             </Space>
             <Spin spinning={tableLoading}>
@@ -870,7 +925,7 @@ const onInputChange=(e)=>{
                 pagination={{
                   total: totals,
                   showTotal: total => `共${total}条`,
-                  pageSizeOptions: [5,10,20,40],
+                  pageSizeOptions: [20,40],
                   showSizeChanger: true,
                 }}
                 rowSelection={{
@@ -890,8 +945,8 @@ const onInputChange=(e)=>{
         onCancel={()=>{  setIsModalOpen(false)}}
         width='50%'
         style={{height:'500px'}}
-        destroyOnClose
         zIndex={1001}
+        destroyOnClose={true}
       >
         <Form
           form={articleModalForm}
@@ -1157,19 +1212,20 @@ const onInputChange=(e)=>{
       </Modal>
       { /** **************************************** 新增 【抽屉】 ************************************* * */}
       <Drawer
-
          width={400}
          title="图库列表展示"
          open={openDrawer}
-         onClose={()=>{setOpenDrawer(false)}}
+         onClose={cancelDrawer}
          getContainer={false}
          zIndex={1002}
+         extra={
+           <Space>
+             <Button type="primary" onClick={bindImgDatasPic}>绑定</Button>
+             <Button onClick={cancelDrawer}>取消</Button>
+           </Space>
+         }
+         destroyOnClose
       >
-        <Space style={{marginBottom:50}}>
-          <Affix offsetTop={100}>
-            <Button type= 'primary' icon={<PlusOutlined />} onClick={bindImgDatasPic}>确认</Button>
-          </Affix>
-        </Space>
         <Table
           rowKey="id"
           columns={imgColums}
@@ -1181,6 +1237,38 @@ const onInputChange=(e)=>{
           pagination={false}
         />
       </Drawer>
+      { /** ****************************************  批量发布; 设置时间  ; 【抽屉】  ************************************* * */}
+      <Modal
+        title="批量发布设置间隔时间"
+        open={bathPublishModalOpen}
+        onOk={bathModalOk}
+        onCancel={()=>{ setBathPublishModalOpen(false)}}
+        destroyOnClose
+      >
+        <Form
+          form={bashPbForm}
+          labelCol={{ span: 4 }}
+          wrapperCol={{ span: 16 }}
+          autoComplete="off"
+        >
+          <Form.Item
+            labelCol={{ span: 6}}
+            label="开始发布时间"
+            name="bathPbDate"
+            rules={[{required: true}]}
+          >
+            <DatePicker showTime  renderExtraFooter={ondataFooter}  />
+          </Form.Item>
+          <Form.Item
+            labelCol={{ span: 6}}
+            label="选择间隔的时间"
+            name="bathPbInterval"
+            rules={[{required: true}]}
+          >
+            <InputNumber   width={30}  addonAfter="分钟" />
+          </Form.Item>
+        </Form>
+      </Modal>
 
     </GridContent>
 

@@ -534,7 +534,7 @@ const Center = () => {
     formData.append('channel',  upLoadForm.importArticleChannel);
     //
      axios.post('http://101.201.33.155:8099/them/import/params/file', formData, {
-    // axios.post('http://localhost:8099/them/import/params/file', formData, {
+   //  axios.post('http://localhost:8099/them/import/params/file', formData, {
       headers: {'Content-Type': 'multipart/form-data'}
       // eslint-disable-next-line no-unused-vars
     }).then((res) => {
@@ -703,9 +703,9 @@ const onDelBath=()=>{
           <Button  type="primary"  onClick={onDataMoringTmp} size="small">今天6点 </Button>
           <Button  type="primary"  onClick={onDataAfterTmp} size="small"> 今天14点 </Button>
           <Button  type="primary"  onClick={onDataNgTmp} size="small">    今天19点 </Button>
-          <Button  type="primary"  onClick={onDataTMTmp} size="small">   明天6点 </Button>
-          <Button  type="primary"  onClick={onDataTmAfTmp} size="small"> 明天14点 </Button>
-          <Button  type="primary"  onClick={onDataTmNgTmp} size="small"> 明天19点 </Button>
+          <Button  type="primary"  onClick={onDataTMTmp} size="small">    明天6点 </Button>
+          <Button  type="primary"  onClick={onDataTmAfTmp} size="small">  明天14点 </Button>
+          <Button  type="primary"  onClick={onDataTmNgTmp} size="small">  明天19点 </Button>
         </Space>
     )
   }
@@ -786,7 +786,7 @@ const switchChange =(value)=>{
             </Spin>
           </Card>
       </Row>
-      {/** ******************************  [ 新增/编辑 modal]  ******************************************* */}
+      {/** *****************************************************************  [ 新增/编辑 modal]  ******************************************* */}
       <Modal
         title={`${operationRef.current.data}主题`}
         open={isModalOpen}
@@ -883,7 +883,7 @@ const switchChange =(value)=>{
       </Modal>
 
 
-      {/** ******************************  [ 上传的 modal]  ******************************************* */}
+      {/** *****************************************************************  [ 上传的 modal]  ******************************************* */}
 
       <Modal
         title="批量导入主题"
@@ -949,7 +949,7 @@ const switchChange =(value)=>{
         </Form>
       </Modal>
 
-      { /** ********************** 新增【模板】的话的modal   ************************ */}
+      { /** ********************************************* 新增【模板】的话的modal   ************************ */}
       <Modal
         title="模板生成主题"
         open={tempplateModalOpen}
