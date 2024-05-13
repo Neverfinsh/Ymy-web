@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { PlusOutlined, ReloadOutlined, SearchOutlined } from '@ant-design/icons';
-import { Button, Card, Modal, Select, Space, Upload } from 'antd';
+import { Button, Card, Form, Modal, Select, Space, Upload } from 'antd';
 import axios from 'axios';
 import { findDeviceList } from '@/services/device';
 import { openNotification } from '@/utils/utils';
@@ -191,7 +191,6 @@ const imgManage = () => {
   }
 
 
-  // eslint-disable-next-line react-hooks/rules-of-hooks
   useEffect(() => {
     initDviceOption()
   }, []);
@@ -221,8 +220,20 @@ const imgManage = () => {
 
   return (
     <>
-        <Space  style={{ marginBottom: 16}}>
-          <label>设备编号:</label>
+        <Space  style={{ marginBottom: 16}} size={20}>
+          <label style={{fontSize:15}}>图片风格:</label>
+          <Select
+           // mode="tags"
+            style={{ width: 200, }}
+            placeholder="选择图片风格"
+         /*   onChange={onChange}
+            options={moduleOptions}*/
+          >
+            <Select.Option value="demo">全部</Select.Option>
+            <Select.Option value="demo">情感</Select.Option>
+            <Select.Option value="demo">现实</Select.Option>
+          </Select>
+          <label style={{fontSize:15}}>设备编号:</label>
           <Select
             style={{ width: 150 }}
             options={deviceOption}

@@ -6,6 +6,7 @@ import styles from './style.less';
 import DeviceView from '@/pages/account/settings/components/device';
 import ImgManage from '@/pages/account/settings/components/imgManage';
 import BaseSetting from '@/pages/account/settings/components/BaseSetting';
+import SendSetting from '@/pages/account/settings/components/sendSetting';
 
 const { Item } = Menu;
 
@@ -17,9 +18,11 @@ const Settings = () => {
     device:       '设备管理',
     base:         '基本设置',
     imgManage:    '图片管理',
+    sendSetting:  '发布配置',
 
   });
-  const [selectKey, setSelectKey] = useState('device');
+ // const [selectKey, setSelectKey] = useState('device');
+  const [selectKey, setSelectKey] = useState('sendSetting');
 
   const resize = () => {
     if (!main) {
@@ -69,6 +72,8 @@ const Settings = () => {
         return <DeviceView />;
       case 'imgManage':
         return <ImgManage />;
+      case 'sendSetting':
+        return <SendSetting />;
       default:
         break;
     }

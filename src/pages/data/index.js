@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Button, Card, DatePicker, Form, Row, Select, Space, Spin, Table } from 'antd';
+import { Button, Card, DatePicker, Form, Row, Select, Space, Spin, Table, Tag } from 'antd';
 import { connect, history } from 'umi';
 import { GridContent } from '@ant-design/pro-layout';
 import { SearchOutlined } from '@ant-design/icons';
@@ -12,23 +12,91 @@ import { findDataRecordList } from '@/services/data';
 const DataCenter = () => {
 
   const[countDataSource,setCountDataSource]=useState([]);
-
   const[totals,setTotals]=useState(0);
   const[optionValue,setOptionValue]=useState();
-  const[optionDataValue,setOptionDataValue]=useState();
   const [empt,setEmpt]=useState(false)
-
   const [deviceOption,setDeviceOption]=useState([]);
- // 预定义周期
-  const [dataOption]=useState([
-      { value: 'afterTomorrow',     label: '后天' },
-      { value: 'tomorrow',     label: '明天' },
-      { value: 'today',        label: '今天' },
-      { value: 'yesterday'   , label: '昨天' },
-      { value: 'threeday',     label: '最近天' },
-      { value: 'week',         label: '一周' },
-  ]);
- // 自定义周期
+  // 自定义周期
+  const [startTime,setStartTime]=useState(new moment().subtract(1,'days'));
+  const [endTime,setEndTime]=useState(new moment().add(6,'days'));
+
+  const columns=[
+    {
+      title: '序号',
+      dataIndex: 'index',
+      key: 'index',
+      render:(text,record,index)=>`${index+1}`,
+    },
+    {
+      title: '统计日期',
+      dataIndex: 'beginTime',
+      key: 'beginTime',
+    },
+    {
+      title: '设备编号',
+      dataIndex: 'devicedId',
+      key: 'devicedId',
+    },
+    {
+      title: '主题数量',
+      dataIndex: 'themTotalCount',
+      key: 'themTotalCount',
+      render:(text)=>{
+        if(Number(text) === 0){
+          return  <Tag color="volcano">{text}</Tag>
+        }else {
+          return  <Tag color="green">{text}</Tag>
+        }
+      }
+    },
+    {
+      title: '文章完成数量',
+      dataIndex: 'finishedCount',
+      key: 'finishedCount',
+      render:(text)=>{
+          if(Number(text) === 0){
+            return  <Tag color="volcano">{text}</Tag>
+          }else {
+            return  <Tag color="green">{text}</Tag>
+          }
+      }
+    },
+    {
+      title: '文章未完成数量',
+      dataIndex: 'unfinishedCount',
+      key: 'unfinishedCount',
+      render:(text)=>{
+        if(Number(text) === 0){
+          return  <Tag color="volcano">{text}</Tag>
+        }else {
+          return  <Tag color="green">{text}</Tag>
+        }
+      }
+    },
+    {
+      title: '操作',
+      width: 100,
+      key: 'option',
+      valueType: 'option',
+      render: ( record) => [
+        <Space key="opt" >
+          {/*<a onClick={()=>{detailArticle(record)}}>查看详情</a>*/}
+        </Space>
+
+      ],
+    },
+  ];
+
+  useEffect(() => {
+    initDviceOption()
+  }, []);
+
+
+  useEffect(() => {
+    initList()
+  }, []);
+
+
 
   useEffect(()=>{
     setDeviceOption(deviceOption)
@@ -51,201 +119,49 @@ const DataCenter = () => {
     const  {userAccount} = accountObj
 
     const  options=[]
-    const defaultObj={}
-    defaultObj.value='all'
-    defaultObj.label='------全部------'
-    options.push(defaultObj)
-
     findDeviceList(userAccount).then(res=>{
-      if(res.code===0){
+      if(0 === res['code']){
+        let     defaultValue
         const   deviceNames=[]
-        const   deviceList=res.res
-        // eslint-disable-next-line no-plusplus
+        const   { res: deviceList } = res
         for(let i=0;i<deviceList.length;i++){
-          deviceNames.push(deviceList[i].dviceName)
+          deviceNames.push(deviceList[i]['dviceName'])
           const obj={}
-          obj.value=deviceList[i].dviceName
-          obj.label=deviceList[i].dviceName
+          obj.value=deviceList[i]['dviceName']
+          obj.label=deviceList[i]['dviceName']
+          defaultValue=deviceList[i]['dviceName']
           options.push(obj)
         }
         setDeviceOption(options);
+        setOptionValue(defaultValue)
       }
     }).catch((error)=>{
       openNotification('error',`获取设备编号失败!原因:${error}`,3)
     });
   }
 
-
-
   const initList=()=>{
-    setEmpt(true)
-    const userStr=localStorage.getItem("user");
-    const user=JSON.parse(userStr);
-
-    if(user === undefined){
-      history.push('/user/login');
-      return ;
-    }
-    // 获取当前日期
-    const now = new Date();
-    const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
-    const endOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59)
-
-    const   param={}
-            param.uid=user.userAccount
-            param.deviceId='all'
-            param.channel=null
-            param.status=null
-            param.startTime=moment(startOfDay).format('YYYY-MM-DD HH:mm:ss')
-            param.endTime=moment(endOfDay).format('YYYY-MM-DD HH:mm:ss')
-
-    findDataRecordList(param).then(res => {
-      const list=res.res
-      setCountDataSource(list)
-      setTotals(list.length)
-    }).catch((error) => {
-      openNotification('error',`查询数据统计过列表失败！,原因:${error}`)
-    });
-    setEmpt(false)
-  }
-
-  useEffect(() => {
-    initList()
-    initDviceOption()
-  }, []);
-
-
-
-  const  detailArticle=(record)=>{
-    console.log('record' ,record);
-  }
-
-
-  const columns=[
-    {
-      title: '序号',
-      dataIndex: 'index',
-      key: 'index',
-      render:(text,record,index)=>`${index+1}`,
-    },
-    {
-      title: '日期时间',
-      dataIndex: 'devicedId',
-      key: 'devicedId',
-    },
-    {
-      title: '账号',
-      dataIndex: 'uid',
-      key: 'userId',
-    },
-    {
-      title: '设备编号',
-      dataIndex: 'devicedId',
-      key: 'devicedId',
-    },
-
-
-    {
-      title: '主题数量',
-      dataIndex: 'themTotalCount',
-      key: 'themTotalCount',
-    },
-    {
-      title: '文章完成数量',
-      dataIndex: 'finishedCount',
-      key: 'finishedCount',
-    },
-    {
-      title: '文章未完成数量',
-      dataIndex: 'unfinishedCount',
-      key: 'unfinishedCount',
-    },
-
-    // {
-    //   title: '发布平台',
-    //   dataIndex: 'articleChannel',
-    //   key: 'articleChannel',
-    //   render: (text) =>{
-    //      return text === undefined ? '今日头条' : '其他平台'
-    //   }
-    // },
-    {
-      title: '操作',
-      width: 100,
-      key: 'option',
-      valueType: 'option',
-      // eslint-disable-next-line no-unused-vars
-      render: ( record) => [
-        <Space key="opt" >
-          <a onClick={()=>{detailArticle(record)}}>查看详情</a>
-        </Space>
-
-      ],
-    },
-  ];
-
-
-
-
-
-  const onOptionChange=(value)=>{
-    setOptionValue(value);
-  }
-
-
-
-  const onDataChange=(value)=>{
-    setOptionDataValue(value);
-  }
-
-  useEffect(()=>{
-    setOptionValue(optionValue)
-  },[optionValue])
-
-
-
-
-  const onSearch=()=>{
 
     setEmpt(true)
     const userStr=localStorage.getItem("user");
     const user=JSON.parse(userStr);
-
     if(user === undefined){
       history.push('/user/login');
       return ;
     }
-    // 获取当前日期
-    const now = new Date();
-    const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
-    const endOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59)
 
     const   param={}
-    if(optionDataValue === 'today'){
-     param.startTime=moment(startOfDay).format('YYYY-MM-DD HH:mm:ss')
-     param.endTime=moment(endOfDay).format('YYYY-MM-DD HH:mm:ss')
-   }
-    if(optionDataValue === 'yesterday'){
-       const yesterdayStartTime = moment(startOfDay).subtract(1, 'days');
-       const yesterdayEndTime = moment(endOfDay).subtract(1, 'days');
-       param.startTime=moment(yesterdayStartTime).format('YYYY-MM-DD HH:mm:ss')
-       param.endTime=moment(yesterdayEndTime).format('YYYY-MM-DD HH:mm:ss')
+    param.startTime=moment(startTime).set({ hour: 0, minute: 0, second: 0 }).format('YYYY-MM-DD HH:mm:ss')
+    param.endTime=moment(endTime).set({ hour: 23, minute: 59, second: 59 }).format('YYYY-MM-DD HH:mm:ss')
+    if(optionValue === undefined){
+      const  devicesStr=localStorage.getItem("devices")
+      const  devicesArr=JSON.parse(devicesStr);
+      const  defaultValue=devicesArr[0]
+      param.deviceId= defaultValue
+    }else {
+      param.deviceId= optionValue
     }
-    if(optionDataValue === 'tomorrow'){
-      const yesterdayStartTime = moment(startOfDay).add(1, 'days');
-      const yesterdayEndTime = moment(endOfDay).add(1, 'days');
-      param.startTime=moment(yesterdayStartTime).format('YYYY-MM-DD HH:mm:ss')
-      param.endTime=moment(yesterdayEndTime).format('YYYY-MM-DD HH:mm:ss')
-    }
-    if(optionDataValue === 'afterTomorrow'){
-      const yesterdayStartTime = moment(startOfDay).add(2, 'days');
-      const yesterdayEndTime = moment(endOfDay).add(2, 'days');
-      param.startTime=moment(yesterdayStartTime).format('YYYY-MM-DD HH:mm:ss')
-      param.endTime=moment(yesterdayEndTime).format('YYYY-MM-DD HH:mm:ss')
-    }
-
-    param.uid=user.userAccount
-    param.deviceId='all'
+    param.uid= user.userAccount
     param.channel=null
     param.status=null
 
@@ -260,11 +176,36 @@ const DataCenter = () => {
       setEmpt(false)
     });
 
-
-
   }
 
 
+  const  detailArticle=(record)=>{
+       console.log('record' ,record);
+  }
+
+  const onOptionChange=(value)=>{
+        setOptionValue(value);
+  }
+
+  useEffect(()=>{
+    setOptionValue(optionValue)
+  },[optionValue])
+
+
+
+  const onSearch=()=>{
+    initList()
+  }
+
+const startTimeChange=(date, dateString)=>{
+    console.log('startTimeChange' ,dateString);
+    setStartTime(dateString)
+}
+
+const endTimeChange=(date, dateString)=>{
+     console.log('endTimeChange' ,dateString);
+     setEndTime(dateString)
+  }
 
 
   return (
@@ -273,13 +214,11 @@ const DataCenter = () => {
         <Card bordered style={{ marginBottom: 24 , width:'100%',height: '80%' }} >
           <Space  style={{ marginBottom: 16}}>
             <a style={{color:'black'}}> 设备编号:</a>
-            <Select   defaultValue="all"  style={{ width: 150 }}   options={deviceOption}  onChange={onOptionChange}/>
-            <a style={{color:'black'}}> 查询周期:</a>
-            <Select    defaultValue="today"  style={{ width: 150 }}   options={dataOption}  onChange={onDataChange}  />
+            <Select   value={optionValue}  style={{ width: 150 }}   options={deviceOption}  onChange={onOptionChange}/>
             <a style={{color:'black'}}>开始日期:</a>
-            <DatePicker      style={{ width: 150 }} />
+            <DatePicker      style={{ width: 150 }}  value={moment(startTime)}  onChange={startTimeChange} />
             <a style={{color:'black'}}>结束日期:</a>
-            <DatePicker      style={{ width: 150 }} />
+            <DatePicker      style={{ width: 150 }}  value={moment(endTime)} onChange={endTimeChange}  />
             <Button    type= 'primary'  icon={<SearchOutlined/>} onClick={onSearch} >查询</Button>
           </Space>
           <Spin spinning={ empt}>

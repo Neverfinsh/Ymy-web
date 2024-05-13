@@ -1,7 +1,7 @@
 import request from 'umi-request';
 
-  const url = 'http://101.201.33.155:8099';
- // const url = 'http://localhost:8099';
+ // const url = 'http://101.201.33.155:8099';
+    const url = 'http://localhost:8099';
 
 /**
  * 查询列表
@@ -9,6 +9,13 @@ import request from 'umi-request';
  */
 export async function findThemList(params) {
   return request(`${url}/them/web/findThemList`, {
+    method: 'POST',
+    data: params,
+  });
+}
+
+export async function findOthersThemList(params) {
+  return request(`${url}/them/web/findOthersThemList`, {
     method: 'POST',
     data: params,
   });

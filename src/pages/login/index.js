@@ -47,7 +47,7 @@ const Login = (props) => {
                     deviceNames.push(deviceList[i].dviceName)
                  }
                 localStorage.setItem("devices",JSON.stringify(deviceNames))
-                history.push("../../account/them")
+                history.push("../../data")
             }
         }
         ).catch((error)=>{

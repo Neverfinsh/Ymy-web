@@ -44,12 +44,19 @@ export default [
             icon: 'home',
             component: './data',
           },
+
           {
-            path: '/task',
-            name: '任务日历',
-            icon: 'user',
-            component: './task',
+            path: '/account/themCenter',
+            name: '主题中心',
+            icon: 'home',
+            component: './account/them/center',
           },
+          // {
+          //   path: '/task',
+          //   name: '任务中心',
+          //   icon: 'user',
+          //   component: './task',
+          // },
           // account
           {
             path: '/account',
@@ -72,7 +79,7 @@ export default [
               {
                 path: '/account/them',
                 name: '主题列表',
-                icon: 'user',
+                icon: 'home',
                 component: './account/them',
               },
               // {

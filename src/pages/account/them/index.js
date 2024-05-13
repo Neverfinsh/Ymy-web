@@ -17,7 +17,14 @@ import {
 } from 'antd';
 import { connect, history } from 'umi';
 import { GridContent } from '@ant-design/pro-layout';
-import { CloudUploadOutlined, DeleteOutlined, PlusOutlined, ReloadOutlined, SearchOutlined } from '@ant-design/icons';
+import {
+  CloudUploadOutlined,
+  DeleteOutlined,
+  PlusOutlined,
+  ReloadOutlined,
+  SearchOutlined,
+  ThunderboltOutlined,
+} from '@ant-design/icons';
 import useForm from 'antd/lib/form/hooks/useForm';
 import moment from 'moment';
 import axios from 'axios';
@@ -35,6 +42,9 @@ const Center = () => {
   const [templateThemform] = useForm();
   const[isModalOpen,setIsModalOpen]=useState(false);
   const[isInportFileModalOpen,setIsInportFileModalOpen]=useState(false);
+  const[isInportFileTemplateModalOpen,setIsInportFileTemplateModalOpen]=useState(false);
+  const[distributeFlag,setDistributeFlag]=useState(false);
+
   const [tableDataSource,setTableDataSource]=useState([]);
   const operationRef=useRef( {data:''});
   const [tableLoaidng,setTableLoading]=useState(false);
@@ -48,9 +58,20 @@ const Center = () => {
   // [新增模板主题的 开始和结束的下拉框]、
   const [startTmpSelectDatas,setStartTemplateSelectDatas]=useState([]);
   const [endtmpSelectDatas,setEndTemplateSelectDatas]=useState([]);
+  //  【 主题导入的配置】
+  const [importTemplate,setImportTemplate]=useState([]);
+
 
   const [saveStartTmp,setSaveStartTmp]=useState(false)
   const [saveEndTmp,setSaveEndTmp]=useState(false)
+
+
+  // 批量发布选择的日期
+  const [dataSelect,setDataSelect]=useState(moment().format("YYYY-MM-DD"));
+
+
+  const[totals,setTotals]=useState(0);
+
 
   const titleTmp="例如：把 '如何谈恋爱'? 这个标题润色一下,使得标题更加吸引人眼球，更加具体创新力，不超过14个字，要求标题带有双引号,不要带有冒号";
 
@@ -71,6 +92,62 @@ const Center = () => {
       "value":"2"
     },
   ]);
+
+
+
+
+
+  //  【初始化】
+  const  initThemList=()=>{
+    setTableLoading(true)
+    const userStr=localStorage.getItem("user");
+    const user=JSON.parse(userStr);
+
+    let defaultDeviceId = '';
+    if (optionValue === '' || optionValue === undefined || optionValue === null) {
+      defaultDeviceId = 'all';
+    } else {
+      defaultDeviceId = optionValue;
+    }
+
+    if(user === undefined){
+      history.push('/user/login');
+      return ;
+    }
+
+    const  param={}
+    param.userId=user.userAccount
+    param.deviceId=defaultDeviceId
+    param.status=Number(statuValue)
+   // param.startTime=dataSelect
+    param.startTime=null
+    console.log('--查询列表---' , param);
+    findThemList(param).then(res => {
+      let   dates=[]
+      dates=res.res;
+      setTableDataSource(dates)
+      setTotals(dates.length)
+      setTimeout(()=>{
+        setTableLoading(false)
+      },1000)
+    }).catch((error) => {
+      openNotification("error",`查询主题列表失败,原因: ${error}`,)
+    });
+  }
+
+  // 【 初始化 】
+  useEffect(() => {
+    initThemList()
+    initDviceOption();
+  }, []);
+
+
+  const [tmp,setTmp]=useState(true)
+  useEffect(()=>{
+    setTmp(tmp)
+  },[tmp])
+
+
 
   const  onStartChange =()=>{
     const param=templateThemform.getFieldsValue();
@@ -102,7 +179,6 @@ const Center = () => {
     const param=templateThemform.getFieldsValue();
 
     param.uid=localUser.userAccount
-    // eslint-disable-next-line no-self-assign
     param.deviceId=param.deviceId
     param.status=0
     param.createTime=moment(param.articleSendTime).format('YYYY-MM-DD HH:mm:ss')
@@ -111,11 +187,9 @@ const Center = () => {
     const articleThem=param.startTemplateContent+param.keyWordTemplate+param.endTemplateContent
     param.articleThem=articleThem
 
-    console.info("新增一条模板话题,请求参数:",param)
     saveThem(param).then(res => {
       if(res.code === 1){
         openNotification("success","【新增一条模板主题】成功",3.5)
-        // eslint-disable-next-line no-use-before-define
         initThemList();
         setTempplateModalOpen(false)
       }
@@ -155,52 +229,6 @@ const Center = () => {
     });
 
  }
-
-  //  【初始化】
- const  initThemList=()=>{
-
-   setTableLoading(true)
-
-   const userStr=localStorage.getItem("user");
-   const user=JSON.parse(userStr);
-
-   let defaultDeviceId = '';
-   if (optionValue === '' || optionValue === undefined || optionValue === null) {
-     defaultDeviceId = 'all';
-   } else {
-     defaultDeviceId = optionValue;
-   }
-
-   if(user === undefined){
-       history.push('/user/login');
-       return ;
-   }
-
-   const  param={}
-        param.userId=user.userAccount
-        param.deviceId=defaultDeviceId
-        param.status=Number(statuValue)
-
-   findThemList(param).then(res => {
-     let   dates=[]
-           dates=res.res;
-     setTableDataSource(dates)
-    setTimeout(()=>{
-      setTableLoading(false)
-    },1000)
-   }).catch((error) => {
-     openNotification("error",`查询主题列表失败,原因: ${error}`,)
-   });
-
-
-
- }
-
-  // 【 初始化 】
-  useEffect(() => {
-    initThemList()
-    initDviceOption();
-  }, []);
 
 
  // 【 刷新 】
@@ -243,7 +271,6 @@ const Center = () => {
         const themId=record.id
         delThemImp(themId).then(res=>{
           const resultCode=res.code
-          // eslint-disable-next-line no-empty
           if(resultCode===0){
             openNotification("success",`删除主题列表成功`,)
           }
@@ -303,27 +330,30 @@ const Center = () => {
     //   key: 'uid',
     //   width:'10%'
     // },
+    {
+      title: '设备编号',
+      dataIndex: 'deviceId',
+      key: 'deviceId',
+      width:'10%'
+    },
     // {
-    //   title: '设备编号',
-    //   dataIndex: 'deviceId',
-    //   key: 'deviceId',
-    //   width:'10%'
+    //   title: '模板',
+    //   dataIndex: 'articleTitleTemplate',
+    //   key: 'articleTitleTemplate',
+    //   width:'20%',
+    //
+    //   render: (text) => {
+    //     return (text===""  || text===null )?'未设置标题模板':<label style={{fontWeight:'bold'}}>{text}</label>
+    //   }
     // },
     {
-      title: '标题模板',
-      dataIndex: 'articleTitleTemplate',
-      key: 'articleTitleTemplate',
-      width:'20%',
-      render: (text) => {
-        return (text===""  || text===null )?'未设置标题模板':<a style={{fontWeight:'bold'}}>{text}</a>
-      }
-    },
-
-    {
-      title: '主题名',
+      title: '内容',
       dataIndex: 'articleThem',
       key: 'articleThem',
-      width:'20%'
+      width:'20%',
+      render: (text) => {
+        return  <a style={{fontWeight:'bold'}}>{text}</a>
+      }
     },
 
     {
@@ -336,7 +366,6 @@ const Center = () => {
     //   title: '状态',
     //   dataIndex: 'status',
     //   key: 'status',
-    //   // eslint-disable-next-line no-nested-ternary
     //   render: (text) => `${text === 0 ? '未发布' : text === 2 ? '已收藏' :'已成文'}`,
     //   width:'10%'
     // },
@@ -397,6 +426,8 @@ const Center = () => {
          "articleSendTime": moment().add(20,'minutes')
        })
   }
+
+
   //  【 新增-按钮】
   const addTemplateModalClick=()=>{
 
@@ -422,11 +453,9 @@ const Center = () => {
     param.accountId=user.userAccount
     param.deviceId=optionValue
     param.module='THEM_TP_START_MODULE'
-    console.log('查询模板获取的的请求参数' ,param);
     findSettingList(param).then((apiResult)=>{
         const {res}=apiResult
       const startOptions=[]
-      // eslint-disable-next-line no-restricted-syntax
       for(const item of res){
          const  option={}
                 option.label=item.name;
@@ -438,11 +467,9 @@ const Center = () => {
       let  endParams={}
       endParams=param
       endParams.module='THEM_TP_END_MODULE'
-      console.log('查询模板获取的的请求参数[end]' ,endParams);
       findSettingList(endParams).then((apiResult2)=>{
         const res2 =apiResult2.res
         const endOptions=[]
-        // eslint-disable-next-line no-restricted-syntax
         for(const item of res2){
           const   option={}
           option.label=item.name;
@@ -463,6 +490,16 @@ const Center = () => {
   }
 
 
+  const importDistributeTemplateClick=()=>{
+      setIsInportFileTemplateModalOpen(true)
+     //  setDistributeFlag (true)
+  }
+
+
+  const importDistributeClick=()=>{
+       setIsInportFileModalOpen(true)
+       setDistributeFlag (true)
+  }
 
   // 【导入-按钮】
   const importFileModalClick=()=>{
@@ -481,19 +518,24 @@ const Center = () => {
 
   // 【新增/编辑，modal 确认 oK 】
   const onModalOk=()=>{
+    const param= addThemform.getFieldsValue();
+    let type=param['themType'][0]
+    if(type=== null || type=== undefined){
+      openNotification("warn","请输入文章类型",3.5)
+      return;
+    }
 
     setIsModalOpen(false)
     const localUser=JSON.parse(localStorage.getItem("user"));
-    const param= addThemform.getFieldsValue();
+
     param.uid=localUser.userAccount
-    // eslint-disable-next-line no-self-assign
     param.deviceId=param.deviceId
     param.status=0
     param.createTime=moment(param.articleSendTime).format('YYYY-MM-DD HH:mm:ss')
     param.updateTime=moment(param.articleSendTime).format('YYYY-MM-DD HH:mm:ss')
     param.articleSendTime=moment(param.articleSendTime).format('YYYY-MM-DD HH:mm:ss')
-    // eslint-disable-next-line no-use-before-define
     param.articleTitleStatus=tmp?0:1
+    param.type=param['themType'][0]
 
     if(operationRef.current.data==="新增"){
       saveThem(param).then(res => {
@@ -516,11 +558,14 @@ const Center = () => {
         openNotification("error",`【编辑主题】失败,原因:${error}`,5)
       });
     }
-
+ //
+    addThemform.resetFields();
   }
 
-  // 【 执行上传 】
-  const handleUpload = (options) => {
+
+
+  const handleTemplateUpload = (options) => {
+
     const upLoadForm= importThemform.getFieldsValue();
     const localUser=JSON.parse(localStorage.getItem("user"));
     //  判断先填写form的选项
@@ -532,20 +577,68 @@ const Center = () => {
     formData.append('articleSendTime',  moment(upLoadForm.importArticleSendTime).format('YYYY-MM-DD HH:mm:ss'));
     formData.append('articleNum',  upLoadForm.importArticleNum);
     formData.append('channel',  upLoadForm.importArticleChannel);
+    formData.append('importTemplate',  upLoadForm.importTemplateDetail);
+    let url;
+    // if(distributeFlag){
+    //   //  url= "http://101.201.33.155:8099/them/import/distribute/file"
+    //   url= "http://localhost:8099/them/import/distribute/file"
     //
-     axios.post('http://101.201.33.155:8099/them/import/params/file', formData, {
-   //  axios.post('http://localhost:8099/them/import/params/file', formData, {
-      headers: {'Content-Type': 'multipart/form-data'}
-      // eslint-disable-next-line no-unused-vars
+    // }else {
+    //   //  url= "http://101.201.33.155:8099/them/import/params/file"
+    //   url= "http://localhost:8099/them/import/params/file"
+    // }
+
+    url= "http://localhost:8099/them/import/template/distribute/file"
+
+    axios.post(url, formData, { headers: {'Content-Type': 'multipart/form-data'}
     }).then((res) => {
-      onSuccess(
-        openNotification("success",`导入主题成功`,3.5)
-      )
+      onSuccess( openNotification("success",`导入主题成功`,3.5))
+      setDistributeFlag(false)
     }).catch((error) => {
       onError(
         openNotification("error",`导入主题失败，原因: ${error}`,3.5)
       )
     });
+
+
+  };
+
+
+  // 【 执行上传 】
+  const handleUpload = (options) => {
+
+    const upLoadForm= importThemform.getFieldsValue();
+    const localUser=JSON.parse(localStorage.getItem("user"));
+    //  判断先填写form的选项
+    const {file, onSuccess, onError} = options;
+    const formData = new FormData();
+    formData.append('file',  file);
+    formData.append('uid',  localUser.userAccount);
+    formData.append('deviceId',  upLoadForm.importDeviceId);
+    formData.append('articleSendTime',  moment(upLoadForm.importArticleSendTime).format('YYYY-MM-DD HH:mm:ss'));
+    formData.append('articleNum',  upLoadForm.importArticleNum);
+    formData.append('channel',  upLoadForm.importArticleChannel);
+    formData.append('importTemplate',  upLoadForm.importTemplate);
+    let url;
+    if(distributeFlag){
+    //  url= "http://101.201.33.155:8099/them/import/distribute/file"
+      url= "http://localhost:8099/them/import/distribute/file"
+
+    }else {
+    //  url= "http://101.201.33.155:8099/them/import/params/file"
+      url= "http://localhost:8099/them/import/params/file"
+    }
+     axios.post(url, formData, { headers: {'Content-Type': 'multipart/form-data'}
+     }).then((res) => {
+       onSuccess( openNotification("success",`导入主题成功`,3.5))
+       setDistributeFlag(false)
+    }).catch((error) => {
+      onError(
+        openNotification("error",`导入主题失败，原因: ${error}`,3.5)
+      )
+    });
+
+
   };
 
 
@@ -566,14 +659,12 @@ const Center = () => {
   }, 300); // 设置防抖的延迟时间，单位为毫秒
 
 
-  // eslint-disable-next-line no-shadow
   const onTableSelectChange = (selectedRowKeys, selectedRows) => {
     setSelectedRowKeys(selectedRowKeys)
     setSelectedRows(selectedRows)
   }
 
 const onDelBath=()=>{
-  console.log('--selectedRows-' ,selectedRows);
   selectedRows.forEach(item => {
      delThemImp(item.id).then(res=>{
        const resultCode=res.code
@@ -616,10 +707,8 @@ const onDelBath=()=>{
           startParam.remark=""
 
     saveSetting(startParam).then((res)=>{
-      console.log('res:' ,res);
       setSaveStartTmp(true)
     }).catch(error=>{
-      console.log('error' ,error);
     })
   }
 
@@ -639,12 +728,9 @@ const onDelBath=()=>{
     startParam.accountId= accountId
     startParam.remark=""
 
-    console.log('---保存结尾模板的请求参数---' ,startParam);
     saveSetting(startParam).then((res)=>{
-      console.log('res:' ,res);
       setSaveEndTmp(true)
     }).catch(error=>{
-      console.log('error' ,error);
     })
   }
 
@@ -719,7 +805,6 @@ const onDelBath=()=>{
     if(optionValue===""||optionValue===undefined|| optionValue===null){
       const devicesStr=localStorage.getItem("devices");
       const devices = JSON.parse(devicesStr);
-      // eslint-disable-next-line prefer-destructuring
       defaultDeviceId=devices[0]
     }else {
       defaultDeviceId=optionValue
@@ -729,26 +814,60 @@ const onDelBath=()=>{
           param.userId=user.userAccount
           param.deviceId=defaultDeviceId
           param.status=Number(statuValue)
+        //  param.startTime=dataSelect
+          param.startTime=null
 
   findThemList(param).then(res => {
     let dates=[]
     dates=res.res;
     setTableDataSource(dates)
+    setTotals(dates.length)
   }).catch((error) => {
     openNotification("error",`查询主题列表失败,原因: ${error}`,)
   });
 }
 
 
- // const [tmp,setTmp]=useState(false)
-  const [tmp,setTmp]=useState(true)
-  useEffect(()=>{
-    setTmp(tmp)
-  },[tmp])
+
 
 const switchChange =(value)=>{
       setTmp(!value)
 }
+
+  const  onDateChange=(date, dateString)=>{
+    setDataSelect(dateString)
+  }
+
+  const importDeviceChange = (value) => {
+    console.log('value : ', value);
+    const userStr = localStorage.getItem('user');
+    const user = JSON.parse(userStr);
+    const param = {};
+    param.accountId = user.userAccount;
+    param.deviceId = optionValue;
+    param.module = 'THEM_IMPORT_TEMPLATE';
+    findSettingList(param).then((apiResult) => {
+      const { res } = apiResult;
+      const templateOptions = [];
+      for (const item of res) {
+        const option = {};
+        option.label = item.name;
+        option.value = item.name;
+        templateOptions.push(option);
+      }
+      setImportTemplate(templateOptions);
+    });
+  };
+
+
+  const templateDetail=(value)=>{
+    console.log('value---' ,value);
+    importThemform.setFieldsValue({
+      importTemplateDetail:value
+    })
+
+  }
+
 
   return (
     <GridContent>
@@ -756,14 +875,17 @@ const switchChange =(value)=>{
           <Card bordered style={{ marginBottom: 24 , width:'100%',height: '80%' }} >
             <Space  style={{ marginBottom: 16}}>
               <Button    type= 'primary'  icon={<PlusOutlined />} onClick={addThemModalClick}>新增</Button>
-              <Button    icon={<CloudUploadOutlined />}  type= 'primary' onClick={importFileModalClick}   > 导入</Button>
+              <Button    icon={<CloudUploadOutlined />}  type= 'primary' onClick={importFileModalClick}   > 批量导入</Button>
+              <Button    icon={<ThunderboltOutlined />}  type= 'primary' onClick={importDistributeClick}   >  自动分配导入</Button>
+              <Button    icon={<ThunderboltOutlined />}  type= 'primary' onClick={importDistributeTemplateClick}   >  自动分配导入(带模板)</Button>
               <Button    icon={<DeleteOutlined />}  type= 'primary'  danger  onClick={onDelBath} > 批量删除</Button>
-              {/* eslint-disable-next-line jsx-a11y/label-has-associated-control */}
               <a> 设备编号:</a>
               <Select     defaultValue="all" style={{ width: 150 }}       options={deviceOption}    onChange={onOptionChange} id="deviceId" />
               <Button    type= 'primary'  icon={<PlusOutlined />} onClick={addTemplateModalClick}>模板新增</Button>
               <Select     defaultValue="0"   style={{ width: 150 }}       options={statuOption}    onChange={onStatuOptionChange} />
-              <Input      placeholder= "输入搜索的主题序号、内容..."  onChange={ (e)=>{inputChange(e.target.value)}} style={{width:250}}/>
+              {/*<Input      placeholder= "输入搜索的主题序号、内容..."  onChange={ (e)=>{inputChange(e.target.value)}} style={{width:250}}/>*/}
+              <label>日期:</label>
+              <DatePicker  onChange={onDateChange}  id="dataPickerId"  value={moment(dataSelect)} />
               <Button     type= 'primary'  icon={<SearchOutlined  />} onClick={onSearch} >查询</Button>
               <Button     type= 'primary'  icon={<ReloadOutlined />} onClick={onRefresh} >刷新</Button>
             </Space>
@@ -775,12 +897,14 @@ const switchChange =(value)=>{
                 style={{width:'100%'}}
                 scroll={{ x: 1300 }}
                 pagination={{
+                  total: totals,
+                  showTotal: total => `共${total}条`,
                   pageSizeOptions: [5,10, 20, 50, 100],
                   showSizeChanger: true,
                 }}
                 rowSelection={{
                     selectedRowKeys,
-                    onChange: onTableSelectChange
+                    onChange: onTableSelectChange,
                 }}
               />
             </Spin>
@@ -795,6 +919,7 @@ const switchChange =(value)=>{
         width='60%'
         style={{height:'500px'}}
         destroyOnClose
+        maskClosable={false}
       >
         <Form
           form={addThemform}
@@ -849,6 +974,19 @@ const switchChange =(value)=>{
             <Select options={deviceOption}  />
           </Form.Item>
           <Form.Item
+            label="主题类型"
+            name="themType"
+            rules={[{required: true}]}
+          >
+            {/*<Select*/}
+            {/*  mode="tags"*/}
+            {/*  style={{ width: '100%', }}*/}
+            {/*  // onChange={onChange}*/}
+            {/*  // options={moduleOptions}*/}
+            {/*/>*/}
+            <Input/>
+          </Form.Item>
+          <Form.Item
             label="状态"
             name="status"
             rules={[{required: true}]}
@@ -893,6 +1031,7 @@ const switchChange =(value)=>{
         width='60%'
         style={{height:'500px'}}
         destroyOnClose
+        maskClosable={false}
       >
         <Form
           form={importThemform}
@@ -949,6 +1088,86 @@ const switchChange =(value)=>{
         </Form>
       </Modal>
 
+      {/** *****************************************************************  [ 上传的 modal ,带有模板]  ******************************************* */}
+
+      <Modal
+        title="批量导入主题带有模板"
+        open={isInportFileTemplateModalOpen}
+        onOk={()=>{setIsInportFileTemplateModalOpen(false)}}
+        onCancel={()=>{setIsInportFileTemplateModalOpen(false)}}
+        width='60%'
+        style={{height:'500px'}}
+        destroyOnClose
+        maskClosable={false}
+      >
+        <Form
+          form={importThemform}
+          name="basic"
+          labelCol={{ span: 8 }}
+          wrapperCol={{ span: 16 }}
+          autoComplete="off"
+        >
+          <Form.Item
+            label="生成文章篇数"
+            name="importArticleNum"
+            rules={[{required: true}]}
+          >
+            <InputNumber  min={1}            style={{ width: 150 }}/>
+          </Form.Item>
+          <Form.Item
+            label="开始发布时间"
+            name="importArticleSendTime"
+            tooltip="开始发布的时间"
+            rules={[{required: true}]}
+          >
+            <DatePicker showTime  style={{ width: 150 }}  />
+          </Form.Item>
+          <Form.Item
+            label="输入设备编号"
+            name="importDeviceId"
+            rules={[{required: true}]}
+          >
+            <Select style={{ width: 150 }} options={deviceOption}  onChange={importDeviceChange} />
+          </Form.Item>
+          <Form.Item
+            label="选择对应的模板"
+            name="importTemplate"
+            rules={[{required: true}]}
+          >
+            <Select style={{ width: 300 }} options={importTemplate}  onChange={templateDetail} />
+          </Form.Item>
+          <Form.Item
+            label="选择模板详情"
+            name="importTemplateDetail"
+            rules={[{required: true}]}
+          >
+             <TextArea rows={5}/>
+          </Form.Item>
+          <Form.Item
+            label="选择发布平台"
+            name="importArticleChannel"
+            rules={[{required: true}]}
+          >
+            <Select  style={{ width: 150 }}>
+              <Select.Option value="tt">今日头条</Select.Option>
+              <Select.Option value="xhs">小红书</Select.Option>
+            </Select>
+          </Form.Item>
+          <Form.Item
+            label="主题"
+            name="articleThemFile"
+            rules={[{required: false}]}
+          >
+            <Upload
+              name="file"
+              customRequest={handleTemplateUpload}
+            >
+              <Button key="upload" icon={<CloudUploadOutlined />}  type= 'primary'   > 导入</Button>
+            </Upload>
+          </Form.Item>
+        </Form>
+      </Modal>
+
       { /** ********************************************* 新增【模板】的话的modal   ************************ */}
       <Modal
         title="模板生成主题"
@@ -958,6 +1177,7 @@ const switchChange =(value)=>{
         width='60%'
         style={{height:'500px'}}
         destroyOnClose
+        maskClosable={false}
       >
         <Form
           form={templateThemform}

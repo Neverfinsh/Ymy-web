@@ -18,15 +18,15 @@ import {
 import { connect, history } from 'umi';
 import { GridContent } from '@ant-design/pro-layout';
 import {
-  CloudUploadOutlined,
-  PlusOutlined,
+  CloudUploadOutlined, PlusCircleOutlined,
+  PlusOutlined, PlusSquareOutlined, PlusSquareTwoTone,
   ReloadOutlined,
   SearchOutlined,
-  TeamOutlined,
+  TeamOutlined, ThunderboltOutlined,
   WarningOutlined, WindowsOutlined,
 } from '@ant-design/icons';
 import useForm from 'antd/lib/form/hooks/useForm';
-import moment from 'moment';
+import moment, { now } from 'moment';
 import TextArea from 'antd/es/input/TextArea';
 import axios from 'axios';
 import { adddArticle, delArticle, findArticleImgRelList, findArticleList, updateArticleImpl } from '@/services/article';
@@ -40,6 +40,7 @@ const Article = () => {
   const[shortArticleModalForm] = useForm();
   const[originalArticleModalForm] = useForm();
   const[bashPbForm] = useForm();
+  const[autoForm] = useForm();
 
   const[isModalOpen,setIsModalOpen]=useState(false);
   const[shortModalOpen,setShotModalOpen]=useState(false);
@@ -70,6 +71,7 @@ const Article = () => {
   const [dataSelect,setDataSelect]=useState(moment().format("YYYY-MM-DD"));
 
   const[bathPublishModalOpen,setBathPublishModalOpen]=useState(false);
+  const[autoPublishModalOpen,setAutoPublishModalOpen]=useState(false);
 
   const imgColums=[
     {
@@ -299,7 +301,7 @@ const Article = () => {
         const  {articleSendTime}=item
         const  data2= moment(articleSendTime,'YYYY-MM-DD');
         if(data2.isSame(data1)){
-          seletedDataArr.push(item)
+           seletedDataArr.push(item)
         }
       }
       setArticleDataSource(seletedDataArr);
@@ -510,7 +512,9 @@ const Article = () => {
             });
           setTableLoading(false)
       }
-        refreshArtiList()
+        //  重置表格
+         articleModalForm.resetFields()
+         refreshArtiList()
   }
 
 
@@ -537,6 +541,7 @@ const Article = () => {
         openNotification('error',`新增一篇文章失败,失败原因:${error}`)
       });
     }
+   setShotModalOpen(false)
     refreshArtiList()
   }
 
@@ -577,11 +582,72 @@ const Article = () => {
   const shuffleArray=(array)=> {
     for (let i = array.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
-      [array[i], array[j]] = [array[j], array[i]];
+           [array[i], array[j]] = [array[j], array[i]];
     }
     return  array;
   }
 
+  const autoModalOk = () => {
+
+    const params = autoForm.getFieldsValue();
+    const { autoNum, autoInterval,autoDate } = params;
+    console.log('--autoModalOk--' ,params);
+    let count = 1;
+    const newOrderselectedRows = shuffleArray(selectedRows);
+    // 智能发布
+    console.log('--newOrderselectedRows--' ,newOrderselectedRows);
+    const increment=Number(autoNum);
+    for(let i=0 ;i<newOrderselectedRows.length;i++){
+
+      let param={}
+      let futureTime;
+      if (  i !== 0  &&  i % increment === 0) {
+           console.log('-i--' ,i);
+           futureTime = moment(autoDate).add(1, 'days');
+      }else {
+        console.log('-i--:' ,i);
+          futureTime = moment(autoDate).add(Number(autoInterval) * Number(count), 'minutes');
+      }
+      const newArticleSendTime = futureTime.format('YYYY-MM-DD HH:mm:ss');
+      console.log('newArticleSendTime--' ,newArticleSendTime);
+      param.articleSendTime = newArticleSendTime;
+      param.updateTime = newArticleSendTime;
+      updateArticleImpl(param).then(res => {
+        if (res.code === 0) {
+          openNotification('success', `修改文章标题 【${newOrderselectedRows[i].id}】发布时间成功`);
+        }
+        initList();
+        setSelectedRows([]);
+        setSelectedRowKeys([]);
+      }).catch((error) => {
+        openNotification('error', `修改文章标题 【 ${newOrderselectedRows[i].id}】 发布时间失败,失败原因:${error}`);
+      });
+      count++;
+
+    }
+    setAutoPublishModalOpen(false)
+
+    // for (const param of newOrderselectedRows) {
+    //   const futureTime = moment(autoDate).add(Number(autoInterval) * Number(count), 'minutes');
+    //   const newArticleSendTime = futureTime.format('YYYY-MM-DD HH:mm:ss');
+    //   param.articleSendTime = newArticleSendTime;
+    //   param.updateTime = newArticleSendTime;
+    //
+    //   updateArticleImpl(param).then(res => {
+    //     if (res.code === 0) {
+    //       openNotification('success', `修改文章标题 【${param.id}】发布时间成功`);
+    //     }
+    //     initList();
+    //     setSelectedRows([]);
+    //     setSelectedRowKeys([]);
+    //
+    //   }).catch((error) => {
+    //     openNotification('error', `修改文章标题 【 ${param.id}】 发布时间失败,失败原因:${error}`);
+    //   });
+    //   count++;
+    // }
+    // setBathPublishModalOpen(false)
+  };
 
   const bathModalOk = () => {
 
@@ -589,11 +655,12 @@ const Article = () => {
     const { bathPbDate, bathPbInterval } = params;
     let count = 1;
     const newOrderselectedRows = shuffleArray(selectedRows);
+    // 智能发布
     for (const param of newOrderselectedRows) {
-      const futureTime = moment(bathPbDate).add(Number(bathPbInterval) * Number(count), 'minutes');
-      const newArticleSendTime = futureTime.format('YYYY-MM-DD HH:mm:ss');
-      param.articleSendTime = newArticleSendTime;
-      param.updateTime = newArticleSendTime;
+        const futureTime = moment(bathPbDate).add(Number(bathPbInterval) * Number(count), 'minutes');
+        const newArticleSendTime = futureTime.format('YYYY-MM-DD HH:mm:ss');
+        param.articleSendTime = newArticleSendTime;
+        param.updateTime = newArticleSendTime;
 
       updateArticleImpl(param).then(res => {
         if (res.code === 0) {
@@ -610,6 +677,39 @@ const Article = () => {
     }
     setBathPublishModalOpen(false)
   };
+
+
+  // 【 智能批量发布】
+  const onPublicAutoBath=()=>{
+
+    console.log('---optionValue--' ,optionValue);
+    if(optionValue=== undefined ){
+      openNotification('warn',`请先选择设备编号`)
+      document.getElementById('deviceId').focus();
+      return;
+    }
+
+    if(dataSelect === ""){
+      openNotification('warn',`请选择批量发布的日期,然后点击查询`)
+      document.getElementById('dataPickerId').focus();
+      return;
+    }
+    if(articleDataSource.length === 0){
+      openNotification('warn',`当前日期没有需要批量发布的文章`)
+      return;
+    }
+    if(selectedRows.length === 0){
+      openNotification('warn',`请先勾选批量发布的文章,然后点击查询`)
+      return;
+    }
+
+    autoForm.setFieldsValue({
+      "autoInterval": 10,
+      "autoDate": moment().add(5,'minutes')
+
+    })
+    setAutoPublishModalOpen(true)
+  }
 
   // 【 批量发布】
   const onPublicshBath=()=>{
@@ -660,6 +760,13 @@ const Article = () => {
 
 
   const onSearchAll=()=>{
+    console.log('---optionValue--' ,optionValue);
+    if(optionValue=== undefined ){
+      openNotification('warn',`请先选择设备编号`)
+      document.getElementById('deviceId').focus();
+      return;
+    }
+
     setTableLoading(true)
     const userStr=localStorage.getItem("user");
     const user=JSON.parse(userStr);
@@ -677,6 +784,8 @@ const Article = () => {
       setTableLoading(false)
     },2000)
   }
+
+
 
 const onSearch=()=>{
 
@@ -708,6 +817,33 @@ const onSearch=()=>{
 }
 
 
+const onSearchExpired=()=>{
+    setTableLoading(true)
+    const userStr=localStorage.getItem("user");
+    const user=JSON.parse(userStr);
+    const  param={}
+    param.userId=user.userAccount
+    param.deviceId= optionValue
+    const seletedDataArr=[]
+    findArticleList(param).then(res => {
+      const list=res.res
+      const data1 = moment().format('YYYY-MM-DD HH:mm:ss');
+      for(const item of list){
+        const  {articleSendTime}=item
+        const  data2= moment(articleSendTime,'YYYY-MM-DD HH:mm:ss');
+        if(data2.isBefore(data1)){
+           seletedDataArr.push(item)
+        }
+      }
+      setArticleDataSource(seletedDataArr);
+      setTotals(seletedDataArr.length)
+    }).catch((error) => {
+      openNotification('error',`查询列表失败！,原因:${error}`)
+    });
+    setTimeout(()=>{
+      setTableLoading(false)
+    },2000)
+  }
 
 
   const upLoadImgRel = (options) => {
@@ -738,7 +874,6 @@ const onSearch=()=>{
         onError('上传失败');
       });
   };
-
 
 
   // 【 执行上传 】
@@ -893,29 +1028,44 @@ const onSearch=()=>{
      setOpenDrawer(false)
    }
 
+  const customMaskStyle = {
+    backgroundColor: 'rgba(0, 0, 0, 0.5)', // 设置遮盖层颜色为半透明黑色
+    width: '100%',                         // 设置遮盖层宽度为屏幕宽度的50%
+    height: '95vh',                        // 设置遮盖层高度为屏幕高度的50%
+  };
+
+  const customHeadStyle = {
+    backgroundColor: 'rgb(149,201,243)', // 设置遮盖层颜色为半透明黑色
+  };
+
+  const customBodyStyle = {
+    height: '98vh',            // 设置 Drawer 内容区域的高度为屏幕高度的80%
+  };
+
   return (
     <GridContent>
       <Row gutter={24}>
           <Card bordered style={{ marginBottom: 24 , width:'100%',height: '80%' }} >
             <Space  style={{ marginBottom: 16}}>
               <Button    type= 'primary'  icon={<PlusOutlined />} onClick={addThemModalClick}>新增</Button>
-              <Button    type= 'primary'  icon={<PlusOutlined />} onClick={addShortModalClick}>批量导入短文/换行</Button>
-              <Button    type= 'primary'  icon={<PlusOutlined />} onClick={addOriginalModalClick}>批量导入原文</Button>
+              <Button    type= 'primary'  icon={<PlusCircleOutlined />} onClick={addShortModalClick}>批量导入短文/换行</Button>
+              <Button    type= 'primary'  icon={<PlusSquareOutlined />} onClick={addOriginalModalClick}>批量导入原文</Button>
               <label>设备编号:</label>
               <Select
+                id="deviceId"
                 style={{ width: 150 }}
                 options={deviceOption}
                 onChange={onOptionChange}
               />
               <label>日期:</label>
               <DatePicker  onChange={onDateChange}  id="dataPickerId"  value={moment(dataSelect)} />
-              <Button    type= 'primary'  icon={<SearchOutlined/>} onClick={onSearch} >查询</Button>
-              <Button    type= 'primary'  icon={<WindowsOutlined />} onClick={onSearchAll} >查询全部</Button>
-              <Button    type= 'primary'  icon={<TeamOutlined />} onClick={onPublicshBath} >批量发布</Button>
-              <Button     type= 'primary'   icon={<ReloadOutlined />}  onClick={refreshArtiList}>刷新</Button>
-              <a>待发布总计: {totals} 篇  </a>
-              <a style={{ color:'#e84242'}} >过期: {totalsExpired} 篇 </a>
-
+              <Button    type= 'primary'  icon={<SearchOutlined/>}       onClick={onSearch} >查询</Button>
+              <Button    type= 'primary'  icon={<WindowsOutlined />}     onClick={onSearchAll} >查询全部</Button>
+              <Button    type= 'primary'  icon={<TeamOutlined />}        onClick={onPublicshBath} >批量发布</Button>
+              <Button    type= 'primary'  icon={<ThunderboltOutlined />} onClick={onPublicAutoBath} >智能发布</Button>
+              <Button     type= 'primary' icon={<ReloadOutlined />}    onClick={refreshArtiList}>刷新</Button>
+              <a>待发布: {totals}</a>
+              <a style={{ color:'#e84242' ,marginLeft:20}}  onClick={onSearchExpired}>过期: {totalsExpired}</a>
             </Space>
             <Spin spinning={tableLoading}>
               <Table
@@ -942,11 +1092,15 @@ const onSearch=()=>{
         title={`${operationRef.current.data}文章内容`}
         open={isModalOpen}
         onOk={onModalOk}
-        onCancel={()=>{  setIsModalOpen(false)}}
+        onCancel={()=>{
+          setIsModalOpen(false)
+          articleModalForm.resetFields()
+        }}
         width='50%'
         style={{height:'500px'}}
         zIndex={1001}
         destroyOnClose={true}
+        maskClosable={false}
       >
         <Form
           form={articleModalForm}
@@ -981,7 +1135,7 @@ const onSearch=()=>{
             name="articleContent"
             rules={[{required: true}]}
           >
-            <TextArea rows={15}   showCount    maxLength={800} readOnly={operationRef.current.data === "详情"} />
+            <TextArea rows={15}   showCount    maxLength={5000} readOnly={operationRef.current.data === "详情"} />
           </Form.Item>
 
           <Form.Item
@@ -1071,6 +1225,7 @@ const onSearch=()=>{
         width='60%'
         style={{height:'500px'}}
         destroyOnClose
+        maskClosable={false}
       >
         <Form
           form={shortArticleModalForm }
@@ -1146,6 +1301,7 @@ const onSearch=()=>{
         width='60%'
         style={{height:'500px'}}
         destroyOnClose
+        maskClosable={false}
       >
         <Form
           form={originalArticleModalForm }
@@ -1211,22 +1367,30 @@ const onSearch=()=>{
         </Form>
       </Modal>
       { /** **************************************** 新增 【抽屉】 ************************************* * */}
+      <div style={{
+        padding: 48,
+      }}>
       <Drawer
-         width={400}
+         width={400} // 设置抽屉的宽度
          title="图库列表展示"
          open={openDrawer}
          onClose={cancelDrawer}
          getContainer={false}
          zIndex={1002}
          extra={
-           <Space>
-             <Button type="primary" onClick={bindImgDatasPic}>绑定</Button>
-             <Button onClick={cancelDrawer}>取消</Button>
+           <Space size={15} >
+             <Button   type="primary" onClick={bindImgDatasPic}  icon={<PlusOutlined />}  >绑定</Button>
+             <Button   type="primary" onClick={cancelDrawer}>取消</Button>
            </Space>
          }
          destroyOnClose
+         mask
+         maskStyle={customMaskStyle}
+         headerStyle={customHeadStyle}
+         bodyStyle={customBodyStyle}
       >
         <Table
+          style={{height:'50px'}}
           rowKey="id"
           columns={imgColums}
           dataSource={drawTableData}
@@ -1237,6 +1401,7 @@ const onSearch=()=>{
           pagination={false}
         />
       </Drawer>
+      </div>
       { /** ****************************************  批量发布; 设置时间  ; 【抽屉】  ************************************* * */}
       <Modal
         title="批量发布设置间隔时间"
@@ -1244,6 +1409,7 @@ const onSearch=()=>{
         onOk={bathModalOk}
         onCancel={()=>{ setBathPublishModalOpen(false)}}
         destroyOnClose
+        maskClosable={false}
       >
         <Form
           form={bashPbForm}
@@ -1270,10 +1436,54 @@ const onSearch=()=>{
         </Form>
       </Modal>
 
+      { /** ****************************************  智能发布; 设置时间  ; 【抽屉】  ************************************* * */}
+      <Modal
+        title="智能发布"
+        open={autoPublishModalOpen}
+        onOk={autoModalOk}
+        onCancel={()=>{ setAutoPublishModalOpen(false)}}
+        destroyOnClose
+        maskClosable={false}
+      >
+        <Form
+          form={autoForm}
+          labelCol={{ span: 4 }}
+          wrapperCol={{ span: 16 }}
+          autoComplete="off"
+        >
+          <Form.Item
+            labelCol={{ span: 6}}
+            label="文章数量"
+            name="autoNum"
+            rules={[{required: true}]}
+          >
+            <InputNumber   style={{width:200}}  />
+          </Form.Item>
+          <Form.Item
+            labelCol={{ span: 6}}
+            label="开始时间"
+            name="autoDate"
+            rules={[{required: true}]}
+          >
+            <DatePicker showTime   style={{width:200}}   renderExtraFooter={ondataFooter}  />
+          </Form.Item>
+          <Form.Item
+            labelCol={{ span: 6}}
+            label="间隔时间"
+            name="autoInterval"
+            rules={[{required: true}]}
+          >
+            <InputNumber   width={30}  addonAfter="分钟"   style={{width:200}}  />
+          </Form.Item>
+        </Form>
+      </Modal>
+
     </GridContent>
 
   );
 };
+
+
 
 export default connect(() => ({
 }))(Article);
